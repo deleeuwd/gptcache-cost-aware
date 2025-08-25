@@ -1,0 +1,14 @@
+# .dockerignore
+.venv/
+__pycache__/
+*.pyc
+.git/
+*.egg-info/
+.ipynb_checkpoints/
+baseline.csv
+data/
+logs/
+*.faiss
+*.index
+*.sqlite
+cache.db
