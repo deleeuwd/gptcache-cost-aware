@@ -328,3 +328,26 @@ def _get_pre_context_function(pre_context_process, kws=None):
 
 def _get_post_func(post_process):
     return getattr(gptcache.processor.post, post_process)
+
+def clear():
+    """ מנקה את ה-cache לחלוטין """
+    from gptcache import cache
+    if hasattr(cache, 'data_manager') and cache.data_manager:
+        if hasattr(cache.data_manager, 's') and hasattr(cache.data_manager, 'v'):
+             cache.data_manager.s.clean()
+             cache.data_manager.v.clean()
+        print("[Cache] Cleared successfully.")
+
+def rebuild(items_to_keep):
+    """ מנקה את ה-cache וטוען אותו מחדש עם הפריטים השמורים """
+    from gptcache import cache
+    from gptcache.processor.pre import get_prompt
+    
+    # 1. ניקוי מלא ואמין של ה-cache
+    clear()
+
+    # 2. טעינה מחדש של הפריטים הטובים ביותר
+    for q, a in items_to_keep:
+        pre_processed_q = get_prompt(q)
+        embedding_data = cache.embedding_func(pre_processed_q)
+        cache.data_manager.save(pre_processed_q, embedding_data, a, "")
