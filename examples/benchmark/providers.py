@@ -1,8 +1,11 @@
-import os, requests
+import os, requests, time, random
 
 class DummyLLM:
     def __init__(self, **kw): pass
     def generate(self, prompt: str) -> str:
+        # הוספנו השהייה אקראית כדי לדמות עלות יצירה
+        delay_ms = random.uniform(50, 350)
+        time.sleep(delay_ms / 1000.0)
         return f"Answer: {hash(prompt) % 100000}"
 
 class OllamaLLM:
@@ -17,5 +20,3 @@ class OllamaLLM:
 
 def get_provider(name: str, **kw):
     return DummyLLM(**kw) if name == "dummy" else OllamaLLM(**kw)
-
-
