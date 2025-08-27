@@ -6,3 +6,7 @@ transformers
 SQLAlchemy
 psutil
 gputil
+
+# test / dev deps
+pytest
+pytest-html

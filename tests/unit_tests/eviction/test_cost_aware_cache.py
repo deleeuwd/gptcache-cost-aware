@@ -64,27 +64,43 @@ class TestCostAwareCacheEviction(unittest.TestCase):
     def test_eviction_evicts_low_cost_entries_on_maxsize(self):
         """Test that eviction removes lowest cost entries when maxsize is exceeded"""
         evicted_keys = []
+        # Simulate actual cache store to ensure evicted keys are removed from real storage
+        cache_store = {}
         
         def on_evict(keys):
             evicted_keys.extend(keys)
+            # Simulate removal from actual cache store (what the real cache backend would do)
+            for key in keys:
+                cache_store.pop(key, None)
         
         eviction = CostAwareCacheEviction(maxsize=3, clean_size=2, on_evict=on_evict)
         
-        # Add entries with different costs
+        # Add entries with different costs and populate simulated cache store
         eviction.put([("key1", 10.0)])  # High cost
-        eviction.put([("key2", 1.0)])   # Low cost
+        cache_store["key1"] = "value1"
+        eviction.put([("key2", 1.0)])   # Low cost  
+        cache_store["key2"] = "value2"
         eviction.put([("key3", 5.0)])   # Medium cost
+        cache_store["key3"] = "value3"
         
         # Should not trigger eviction yet
         self.assertEqual(len(eviction._cache_info), 3)
         self.assertEqual(len(evicted_keys), 0)
+        self.assertEqual(len(cache_store), 3)
         
         # Add one more entry to exceed maxsize
         eviction.put([("key4", 8.0)])   # High cost
+        cache_store["key4"] = "value4"
         
         # Should have evicted 2 entries (clean_size)
         self.assertEqual(len(eviction._cache_info), 2)  # 4 - 2 = 2 remaining
         self.assertEqual(len(evicted_keys), 2)
+        self.assertEqual(len(cache_store), 2)  # Verify actual cache store also reduced
+        
+        # Verify evicted keys are removed from both eviction metadata AND cache store
+        for key in evicted_keys:
+            self.assertNotIn(key, eviction._cache_info, f"Evicted key {key} still in eviction metadata")
+            self.assertNotIn(key, cache_store, f"Evicted key {key} still in cache store")
         
         # Should have evicted the lowest cost entries first
         # key2 (cost=1.0) should definitely be evicted
@@ -94,6 +110,10 @@ class TestCostAwareCacheEviction(unittest.TestCase):
         remaining_keys = set(eviction._cache_info.keys())
         self.assertIn("key1", remaining_keys)  # Highest cost should remain
         self.assertIn("key4", remaining_keys)  # Second highest should remain
+        
+        # Verify remaining keys are still in the cache store
+        for key in remaining_keys:
+            self.assertIn(key, cache_store, f"Remaining key {key} missing from cache store")
 
     def test_eviction_heap_cleanup_and_no_double_eviction(self):
         """Test that heap cleanup works correctly and prevents double eviction"""
@@ -454,6 +474,33 @@ class TestCostAwareCacheEviction(unittest.TestCase):
         self.assertEqual(remaining_costs, expected_remaining_costs,
                         f"Expected remaining items to have costs {expected_remaining_costs}, got {remaining_costs}")
 
+    def test_eviction_calls_cache_backend_delete(self):
+        """Ensure on_evict is used to delete items from the cache backend."""
+        evicted_keys = []
+        mock_cache = Mock()
+
+        def on_evict(keys):
+            evicted_keys.extend(keys)
+            # real code would call the cache backend delete method
+            for k in keys:
+                mock_cache.delete(k)
+
+        eviction = CostAwareCacheEviction(maxsize=3, clean_size=2, on_evict=on_evict)
+
+        # populate to trigger eviction
+        eviction.put([("k1", 10.0)])
+        eviction.put([("k2", 1.0)])
+        eviction.put([("k3", 5.0)])
+        eviction.put([("k4", 8.0)])  # should evict clean_size=2 items
+
+        # metadata cleaned
+        for k in evicted_keys:
+            self.assertNotIn(k, eviction._cache_info)
+
+        # backend delete called for all evicted keys
+        self.assertEqual(mock_cache.delete.call_count, len(evicted_keys))
+        called_args = {call.args[0] for call in mock_cache.delete.call_args_list}
+        self.assertEqual(set(evicted_keys), called_args)
 
 if __name__ == "__main__":
     unittest.main()
