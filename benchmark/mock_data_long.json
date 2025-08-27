@@ -1,0 +1,547 @@
+[
+    {
+        "id": 1,
+        "o": "To load the data in the device of your choice, you can specify the device argument, but note that jaxlib.xla_extension.Device is not supported as it\u2019s not serializable with neither pickle not dill, so you\u2019ll need to use its string identifier instead.",
+        "s": "You can specify the device argument to load the data in the device of your choice, however, jaxlib.xla_extension.Device cannot be used as it is not serializable with either pickle or dill, so you must use its string identifier."
+    },
+    {
+        "id": 2,
+        "o": "You can define your credentials for Google Cloud Storage by specifying \"token\": \"anon\" for an anonymous connection, or \"project\": \"my-google-project\" for using your default gcloud credentials or from the google metadata service.",
+        "s": "You can set your credentials for Google Cloud Storage by indicating \"token\": \"anon\" for an anonymous connection, or \"project\": \"my-google-project\" to use your default gcloud credentials or from the google metadata service."
+    },
+    {
+        "id": 3,
+        "o": "You can define your credentials for Azure Blob Storage by specifying \"anon\": True for an anonymous connection, or \"account_name\": ACCOUNT_NAME and \"account_key\": ACCOUNT_KEY for the gen 2 filesystem, or \"tenant_id\": TENANT_ID, \"client_id\": CLIENT_ID, and \"client_secret\": CLIENT_SECRET for the gen 1 filesystem.",
+        "s": "To set up your credentials for Azure Blob Storage, you can use \"anon\": True for an anonymous connection, or \"account_name\": ACCOUNT_NAME and \"account_key\": ACCOUNT_KEY for the gen 2 filesystem, or \"tenant_id\": TENANT_ID, \"client_id\": CLIENT_ID, and \"client_secret\": CLIENT_SECRET for the gen 1 filesystem."
+    },
+    {
+        "id": 4,
+        "o": "You can download and prepare a dataset into a cloud storage by specifying a remote \"output_dir\" in \"download_and_prepare\". Don\u2019t forget to use the previously defined \"storage_options\" containing your credentials to write into a private cloud storage.",
+        "s": "By specifying a remote \"output_dir\" in \"download_and_prepare\", you can download and store a dataset into the cloud storage. Remember to include the \"storage_options\" with your credentials to enable writing into a private cloud storage."
+    },
+    {
+        "id": 5,
+        "o": "The \"download_and_prepare\" method works in two steps: 1) it first downloads the raw data files (if any) in your local cache, and 2) then it generates the dataset in Arrow or Parquet format in your cloud storage by iterating over the raw data files.",
+        "s": "The \"download_and_prepare\" method is a two-step process: it first stores the raw data files (if any) in the local cache, and then it iterates over these files to create the dataset in Arrow or Parquet format in the cloud storage."
+    },
+    {
+        "id": 6,
+        "o": "You can load a dataset builder from the Hugging Face Hub by running \"builder = load_dataset_builder(\"imdb\")\" and then running \"builder.download_and_prepare(output_dir, storage_options=storage_options, file_format=\"parquet\")\".",
+        "s": "To access a dataset builder from the Hugging Face Hub, execute \"builder = load_dataset_builder(\"imdb\")\" and then \"builder.download_and_prepare(output_dir, storage_options=storage_options, file_format=\"parquet\")\"."
+    },
+    {
+        "id": 7,
+        "o": "You can load a dataset builder using a loading script by running \"builder = load_dataset_builder(\"path/to/local/loading_script/loading_script.py\")\" and then running \"builder.download_and_prepare(output_dir, storage_options=storage_options, file_format=\"parquet\")\".",
+        "s": "To load a dataset builder using a loading script, execute \"builder = load_dataset_builder(\"path/to/local/loading_script/loading_script.py\")\" and then \"builder.download_and_prepare(output_dir, storage_options=storage_options, file_format=\"parquet\")\"."
+    },
+    {
+        "id": 8,
+        "o": "Dask is a parallel computing library and it has a pandas-like API for working with larger than memory Parquet datasets in parallel. Dask can use multiple threads or processes on a single machine, or a cluster of machines to process data in parallel. Dask supports local data but also data from a cloud storage. It can be used to load a dataset saved as sharded Parquet files.",
+        "s": "Dask is a parallel computing library that offers a pandas-like API for processing Parquet datasets that exceed memory capacity. It can be employed to utilize multiple threads or processes on a single machine, or a cluster of machines, and it is compatible with both local and cloud-based data. Furthermore, it is capable of loading datasets stored as sharded Parquet files."
+    },
+    {
+        "id": 9,
+        "o": "A fingerprint in \ud83e\udd17 Datasets is a unique identifier for a dataset that is updated every time a transform is applied to it. It is computed by combining the fingerprint of the previous state and a hash of the latest transform applied.",
+        "s": "A fingerprint in Datasets is a distinctive marker for a dataset that is modified each time a transformation is executed on it. It is generated by combining the fingerprint of the prior state and a hash of the most recent transformation carried out."
+    },
+    {
+        "id": 10,
+        "o": "When a non-hashable transform is used in \ud83e\udd17 Datasets, a random fingerprint is assigned instead, and a warning is raised. The non-hashable transform is considered different from the previous transforms, and as a result, \ud83e\udd17 Datasets will recompute all the transforms.",
+        "s": "When a non-hashable transform is used in \ud83e\udd17 Datasets, a unique identifier is assigned to it and a warning is issued. This transform is seen as distinct from the prior ones, thus \ud83e\udd17 Datasets will recalculate all the transforms."
+    },
+    {
+        "id": 11,
+        "o": "The hash in \ud83e\udd17 Datasets is computed by dumping the object using a `dill` pickler and hashing the dumped bytes. The pickler recursively dumps all the variables used in the function, so any change made to an object used in the function will cause the hash to change.",
+        "s": "The \ud83e\udd17 Datasets hash is generated by taking the object and serializing it with a `dill` pickler, then hashing the resulting bytes. As the pickler recursively dumps all the variables used in the function, any alteration to an object used in the function will cause the hash to be altered."
+    },
+    {
+        "id": 12,
+        "o": "To avoid recomputing all the transforms in \ud83e\udd17 Datasets, one should ensure that their transforms are serializable with pickle or dill. Additionally, when caching is disabled, one should use `Dataset.save_to_disk()` to save their transformed dataset, or it will be deleted once the session ends.",
+        "s": "In order to prevent having to recalculate all the transformations in \ud83e\udd17 Datasets, it is necessary to make sure that the transformations are serializable with pickle or dill. Furthermore, when caching is disabled, `Dataset.save_to_disk()` should be used to save the transformed dataset, or else it will be lost when the session ends."
+    },
+    {
+        "id": 13,
+        "o": "The directory should have a `data` folder with subfolders for each split (`train`, `test`, etc.), and each split folder should contain the audio files and a metadata file with a `file_name` column specifying the relative path to each audio file.",
+        "s": "A `data` folder should be present in the directory, with subfolders for each split (e.g. `train`, `test`) containing the audio files and a metadata file with a `file_name` column that indicates the relative path of each audio file."
+    },
+    {
+        "id": 14,
+        "o": "The script should define the dataset's splits and configurations, handle downloading and generating the dataset examples, and support streaming mode. The script should be named after the dataset folder and located in the same directory as the `data` folder.",
+        "s": "The script, named after the dataset folder and located in the same directory as the `data` folder, should be responsible for defining the dataset's splits and configurations, downloading and generating the dataset examples, and providing streaming mode."
+    },
+    {
+        "id": 15,
+        "o": "You will learn how to create a streamable dataset, create a dataset builder class, create dataset configurations, add dataset metadata, download and define the dataset splits, generate the dataset, and upload the dataset to the Hub.",
+        "s": "You will be taught how to make a streamable collection of data, devise a dataset constructor class, devise dataset setups, include dataset metadata, download and specify the dataset divisions, generate the dataset, and post the dataset to the Hub."
+    },
+    {
+        "id": 16,
+        "o": "To get the full path to the locally extracted file, you need to join the path of the directory where the archive is extracted to and the relative audio file path. This can be done using the os.path.join() function.",
+        "s": "To obtain the complete route to the locally extracted file, you must combine the directory path where the archive is extracted and the relative audio file path by using the os.path.join() function."
+    },
+    {
+        "id": 17,
+        "o": "Dataset streaming is helpful when you don't want to wait for an extremely large dataset to download, the dataset size exceeds the amount of available disk space on your computer, or you want to quickly explore just a few samples of a dataset.",
+        "s": "Streaming datasets is beneficial when you don't want to wait for a huge dataset to download, the size of the dataset surpasses the disk space available on your computer, or you need to quickly analyze a few samples of a dataset."
+    },
+    {
+        "id": 18,
+        "o": "The benefits of using dataset streaming include faster exploration of datasets, the ability to work with larger datasets without needing to download them, and the ability to work with datasets even if you don't have enough disk space to store them.",
+        "s": "Dataset streaming offers a range of advantages, such as expedited investigation of datasets, the capacity to handle larger datasets without downloading them, and the possibility of working with datasets even if you don't possess enough disk storage."
+    },
+    {
+        "id": 19,
+        "o": "To use dataset streaming, you can iterate over the dataset and the data will be streamed as you go. This is especially useful for exploring a dataset or working with a large dataset that you don't want to download.",
+        "s": "By utilizing dataset streaming, you can traverse through the dataset and the data will be streamed as you progress. This is especially advantageous when investigating a dataset or managing a large dataset that you don't wish to download."
+    },
+    {
+        "id": 20,
+        "o": "Dataset streaming is especially helpful when you don\u2019t want to wait for an extremely large local dataset to be converted to Arrow, the converted files size would exceed the amount of available disk space on your computer, or you want to quickly explore just a few samples of a dataset.",
+        "s": "Streaming datasets can be particularly useful when you don't want to wait for a huge local dataset to be converted to Arrow, as the resulting file size may exceed the disk capacity of your computer, or you just want to take a quick look at a few samples of the dataset."
+    },
+    {
+        "id": 21,
+        "o": "The code to create a simple training loop and start training in Pytorch is:\n```\nimport torch\nfrom torch.utils.data import DataLoader\nfrom transformers import AutoModelForMaskedLM, DataCollatorForLanguageModeling\nfrom tqdm import tqdm\ndataset = dataset.with_format(\"torch\")\ndataloader = DataLoader(dataset, collate_fn=DataCollatorForLanguageModeling(tokenizer))\ndevice = 'cuda' if torch.cuda.is_available() else 'cpu' \nmodel = AutoModelForMaskedLM.from_pretrained(\"distilbert-base-uncased\")\nmodel.train().to(device)\noptimizer = torch.optim.AdamW(params=model.parameters(), lr=1e-5)\nfor epoch in range(3):\n    dataset.set_epoch(epoch)\n    for i, batch in enumerate(tqdm(dataloader, total=5)):\n        if i == 5:\n            break\n        batch = {k: v.to(device) for k, v in batch.items()}\n        outputs = model(**batch)\n        loss = outputs[0]\n        loss.backward()\n        optimizer.step()\n        optimizer.zero_grad()\n        if i % 10 == 0:\n            print(f\"loss: {loss}\")\n```",
+        "s": "To create and initiate a training loop in Pytorch, the following code can be used:\n\nimport torch\nfrom torch.utils.data import DataLoader\nfrom transformers import AutoModelForMaskedLM, DataCollatorForLanguageModeling\nfrom tqdm import tqdm\ndataset = dataset.with_format(\"torch\")\ndataloader = DataLoader(dataset, collate_fn=DataCollatorForLanguageModeling(tokenizer))\ndevice = 'cuda' if torch.cuda.is_available() else 'cpu' \nmodel = AutoModelForMaskedLM.from_pretrained(\"distilbert-base-uncased\")\nmodel.train().to(device)\noptimizer = torch.optim.AdamW(params=model.parameters(), lr=1e-5)\n\nfor epoch in range(3):\n    dataset.set_epoch(epoch)\n    for i, batch in enumerate(tqdm(dataloader, total=5)):\n        if i == 5:\n            break\n        batch = {k: v.to(device) for k, v in batch.items()}\n        outputs = model(**batch)\n        loss = outputs[0]\n        loss.backward()\n        optimizer.step()\n        optimizer"
+    },
+    {
+        "id": 22,
+        "o": "The Metric object stores the predictions and references, which are needed to compute the metric values. It is stored as an Apache Arrow table, allowing for lazy computation of the metric and making it easier to gather all the predictions in a distributed setting.",
+        "s": "The Metric object is stored as an Apache Arrow table, which holds the predictions and references required to calculate the metric values. This setup allows for the metric to be computed lazily, making it simpler to accumulate all the predictions in a distributed environment."
+    },
+    {
+        "id": 23,
+        "o": "\ud83e\udd17 Datasets only computes the final metric on the first node, while the predictions and references are computed and provided to the metric separately for each node. These are temporarily stored in an Apache Arrow table, avoiding cluttering the GPU or CPU memory. Once it has gathered all the predictions and references, Metric.compute() will perform the final metric evaluation.",
+        "s": "The final metric is only computed on the first node, while the predictions and references are computed and stored in an Apache Arrow table, avoiding the usage of GPU or CPU memory. Then, Metric.compute() will be used to perform the evaluation when all the predictions and references have been gathered."
+    },
+    {
+        "id": 24,
+        "o": "You can use the `load_dataset_builder` function with the `data_files` parameter and specify the path to your data files. Then, you can call the `download_and_prepare` method on the returned builder object, passing in the output directory and storage options.",
+        "s": "The `load_dataset_builder` function can be used with the `data_files` parameter to indicate the location of the data files. Subsequently, the `download_and_prepare` method can be called on the returned builder object, with the output directory and storage options being specified."
+    },
+    {
+        "id": 25,
+        "o": "The cache in Datasets improves efficiency by storing previously downloaded and processed datasets, allowing for faster access to the data without the need to download or process it again. This saves time and resources when working with large datasets.",
+        "s": "By keeping previously downloaded and processed datasets in the Datasets cache, it is possible to access the data quickly without having to download or process it again, thus saving time and resources when dealing with large datasets."
+    },
+    {
+        "id": 26,
+        "o": "\ud83e\udd17 Datasets assigns a fingerprint to the cache file, which keeps track of the current state of a dataset. The initial fingerprint is computed using a hash from the Arrow table, or a hash of the Arrow files if the dataset is on disk. Subsequent fingerprints are computed by combining the fingerprint of the previous state, and a hash of the latest transform applied.",
+        "s": "A fingerprint is assigned to the cache file of the dataset by Datasets, which monitors the current state of the dataset. The initial fingerprint is calculated through a hash of the Arrow table or a hash of the Arrow files if the dataset is stored on disk. Subsequent fingerprints are generated by combining the fingerprint of the prior state and a hash of the most recent transformation applied."
+    },
+    {
+        "id": 27,
+        "o": "The fingerprint of a dataset is updated by hashing the function passed to map as well as the map parameters (batch_size, remove_columns, etc.). The hash is computed by dumping the object using a dill pickler and hashing the dumped bytes.",
+        "s": "The hash of a dataset is recalculated by hashing the map function and its parameters (batch_size, remove_columns, etc.) with the help of a dill pickler which dumps the object into bytes."
+    },
+    {
+        "id": 28,
+        "o": "When a non-hashable transform is used, \ud83e\udd17 Datasets uses a random fingerprint instead and raises a warning. The non-hashable transform is considered different from the previous transforms, and \ud83e\udd17 Datasets will recompute all the transforms.",
+        "s": "If a non-hashable transform is applied, \ud83e\udd17 Datasets will substitute it with a random fingerprint and give a warning. This transform is distinct from the ones used before, and \ud83e\udd17 Datasets will recalculate all the transforms."
+    },
+    {
+        "id": 29,
+        "o": "There are three methods for creating and sharing an audio dataset: \n   1. Create an audio dataset from local files in python with Dataset.push_to_hub(). \n   2. Create an audio dataset repository with the AudioFolder builder. \n   3. Create an audio dataset by writing a loading script.",
+        "s": "1. Utilizing Dataset.push_to_hub() in python, one can generate an audio dataset from local files. \n2. The AudioFolder builder can be used to construct an audio dataset repository. \n3. A loading script can be written to produce an audio dataset."
+    },
+    {
+        "id": 30,
+        "o": "You can load your own dataset using the paths to your audio files. Use the cast_column() function to take a column of audio file paths, and cast it to the Audio feature. Then upload the dataset to the Hugging Face Hub using Dataset.push_to_hub().",
+        "s": "You can upload your own dataset to the Hugging Face Hub using the Dataset.push_to_hub() function by taking a column of audio file paths and casting it to the Audio feature with the cast_column() method."
+    },
+    {
+        "id": 31,
+        "o": "AudioFolder is a dataset builder designed to quickly load an audio dataset with several thousand audio files without requiring you to write any code. It automatically loads any additional information about your dataset, such as transcription, speaker accent, or speaker intent, as long as you include this information in a metadata file (metadata.csv/metadata.jsonl).",
+        "s": "AudioFolder is a dataset builder that eliminates the need for coding to quickly load a dataset with thousands of audio files. It will automatically incorporate any extra data such as transcription, accent, or intent, provided that it is included in a metadata file (metadata.csv/metadata.jsonl)."
+    },
+    {
+        "id": 32,
+        "o": "It can be helpful to store your metadata as a jsonl file if the data columns contain a more complex format (like a list of floats) to avoid parsing errors or reading complex values as strings. The metadata file should include a file_name column to link an audio file to its metadata.",
+        "s": "Storing your metadata as a jsonl file may be beneficial if the data columns have a more intricate format (e.g. a list of floats) in order to prevent any parsing mistakes or misinterpreting complex values as strings. The metadata file should include a file_name column to associate an audio file with its metadata."
+    },
+    {
+        "id": 33,
+        "o": "The dataset directory for audio datasets involving multiple splits should have the following structure:\n```\ndata/train/first_train_audio_file.mp3\ndata/train/second_train_audio_file.mp3\ndata/test/first_test_audio_file.mp3\ndata/test/second_test_audio_file.mp3\n```",
+        "s": "The directory structure for audio datasets with multiple splits should be as follows:\ndata/train/first_train_audio_file.mp3\ndata/train/second_train_audio_file.mp3\ndata/test/first_test_audio_file.mp3\ndata/test/second_test_audio_file.mp3"
+    },
+    {
+        "id": 34,
+        "o": "If all audio files are contained in a single directory or if they are not on the same level of directory structure, the `label` column won\u2019t be added automatically. If you need it, set `drop_labels=False` explicitly.",
+        "s": "If the audio files are not all located in the same directory or are not at the same level of the directory structure, the `label` column will not be added automatically. To include it, you must explicitly set `drop_labels=False`."
+    },
+    {
+        "id": 35,
+        "o": "In addition to learning how to create a streamable dataset, you\u2019ll also learn how to create a dataset builder class, create dataset configurations, add dataset metadata, download and define the dataset splits, generate the dataset, and upload the dataset to the Hub.",
+        "s": "Apart from understanding how to form a streamable dataset, you will be taught to construct a dataset builder class, arrange dataset configurations, attach dataset metadata, download and determine the dataset divisions, fabricate the dataset, and upload the dataset to the Hub."
+    },
+    {
+        "id": 36,
+        "o": "Information that can be included in the DatasetInfo class includes a description of the dataset, features specifying the dataset column types, a link to the dataset homepage, the license type, and a BibTeX citation of the dataset.",
+        "s": "The DatasetInfo class can comprise a description of the dataset, features indicating the dataset column types, a link to the dataset homepage, the license type, and a BibTeX citation of the dataset."
+    },
+    {
+        "id": 37,
+        "o": "The `_generate_examples` method accepts `local_extracted_archive`, `audio_files`, `metadata_path`, and `path_to_clips` as arguments and yields the metadata associated with the audio files in the TAR file.",
+        "s": "The `_generate_examples` method takes `local_extracted_archive`, `audio_files`, `metadata_path`, and `path_to_clips` as inputs and produces the metadata related to the audio files in the TAR file."
+    },
+    {
+        "id": 38,
+        "o": "A tabular dataset is a generic dataset used to describe any data stored in rows and columns, where the rows represent an example and the columns represent a feature (can be continuous or categorical).",
+        "s": "A dataset in tabular form is a generic representation of any data that is structured into rows and columns, with each row representing an instance and each column representing a feature (which can be either continuous or categorical)."
+    },
+    {
+        "id": 39,
+        "o": "For PyTorch, use the set_format() function to set the dataset format to \"torch\" and specify the columns to format. For TensorFlow, use the to_tf_dataset() function and a data collator to set the dataset format to be compatible with TensorFlow.",
+        "s": "To use PyTorch, the set_format() function should be employed to change the dataset format to \"torch\" and the columns to be formatted should be specified. For TensorFlow, the to_tf_dataset() function and a data collator should be used to make the dataset format compatible with TensorFlow."
+    },
+    {
+        "id": 40,
+        "o": "An IterableDataset in Hugging Face allows you to access and use the dataset without waiting for it to download completely, even for really, really big datasets that won\u2019t even fit on disk or in memory.",
+        "s": "Hugging Face's IterableDataset enables you to access and utilize the dataset without the need to wait for it to finish downloading, even for extremely large datasets that are too large to fit in memory or on disk."
+    },
+    {
+        "id": 41,
+        "o": "You can manipulate and interact with the data stored inside a Dataset object in Hugging Face. It contains columns of data, and each column can be a different type of data. You can access examples from the dataset using indexing or slicing.",
+        "s": "You can interact with and manipulate the data stored in a Hugging Face Dataset object, which consists of columns of various data types. You can also retrieve examples from the dataset through indexing or slicing."
+    },
+    {
+        "id": 42,
+        "o": "The behavior of an IterableDataset is different from a regular Dataset. You don\u2019t get random access to examples in an IterableDataset. Instead, you should iterate over its elements, for example, by calling next(iter()) or with a for loop to return the next item from the IterableDataset.",
+        "s": "The way an IterableDataset behaves is unlike that of a regular Dataset; you cannot access its examples randomly. To get the next item from the IterableDataset, you must iterate over its elements, for instance, by calling next(iter()) or using a for loop."
+    },
+    {
+        "id": 43,
+        "o": "A dataset loading script should include information or attributes about the dataset such as a description, features, homepage, and citation. It should also define how to download and process the data.",
+        "s": "A dataset loading script should incorporate details about the dataset, including a description, features, homepage, and citation. It should also specify the procedure for downloading and manipulating the data."
+    },
+    {
+        "id": 44,
+        "o": "Dataset metadata is information about the dataset that is stored in the dataset card `README.md` in YAML. It includes information like the number of examples required to confirm the dataset was correctly generated, and information about the dataset like its `features`.",
+        "s": "The `README.md` in YAML of the dataset card contains the dataset metadata, which provides details such as the number of samples needed to ensure the dataset was generated correctly, and the `features` of the dataset."
+    },
+    {
+        "id": 45,
+        "o": "To use sharding in your dataset, you can define lists of files in `gen_kwargs` to be shards. Therefore, datasets can automatically spawn several workers to run `_generate_examples` in parallel, and each worker is given a subset of shards to process. Users can also specify `num_proc=` in `load_dataset()` to specify the number of processes to use as workers.",
+        "s": "By using sharding in your dataset, you can specify lists of files in `gen_kwargs` to be shards. This will enable datasets to spawn multiple workers to execute `_generate_examples` in parallel, with each worker being allocated a subset of shards to process. Additionally, users can also specify the number of processes to be used as workers by setting `num_proc=` in `load_dataset()`."
+    },
+    {
+        "id": 46,
+        "o": "ArrowBasedBuilder is a dataset builder class in datasets that allows for yielding batches of data rather than examples one by one. It can speed up the dataset generation by yielding Arrow tables directly, instead of examples.",
+        "s": "The ArrowBasedBuilder class in datasets enables the generation of batches of data instead of individual examples, thus accelerating the dataset creation by outputting Arrow tables instead of examples."
+    },
+    {
+        "id": 47,
+        "o": "You can create an index for your dataset by using [Dataset.add_faiss_index()](/docs/datasets/v2.10.0/en/package_reference/main_classes#datasets.Dataset.add_faiss_index) or [Dataset.add_elasticsearch_index()](/docs/datasets/v2.10.0/en/package_reference/main_classes#datasets.Dataset.add_elasticsearch_index) depending on the system you want to use.",
+        "s": "You can decide which system you want to use to create an index for your dataset by using either [Dataset.add_faiss_index()](/docs/datasets/v2.10.0/en/package_reference/main_classes#datasets.Dataset.add_faiss_index) or [Dataset.add_elasticsearch_index()](/docs/datasets/v2.10.0/en/package_reference/main_classes#datasets.Dataset.add_elasticsearch_index)."
+    },
+    {
+        "id": 48,
+        "o": "You can query your dataset with the embeddings index by loading the DPR Question Encoder, searching for a question with [Dataset.get_nearest_examples()](/docs/datasets/v2.10.0/en/package_reference/main_classes#datasets.Dataset.get_nearest_examples), and accessing the retrieved examples.",
+        "s": "You can use the DPR Question Encoder to query your dataset with the embeddings index, [Dataset.get_nearest_examples()](/docs/datasets/v2.10.0/en/package_reference/main_classes#datasets.Dataset.get_nearest_examples) to search for a question, and then access the examples that are retrieved."
+    },
+    {
+        "id": 49,
+        "o": "You can save the index on disk with [Dataset.save_faiss_index()](/docs/datasets/v2.10.0/en/package_reference/main_classes#datasets.Dataset.save_faiss_index) or [Dataset.save_elasticsearch_index()](/docs/datasets/v2.10.0/en/package_reference/main_classes#datasets.Dataset.save_elasticsearch_index), and reload it at a later time with [Dataset.load_faiss_index()](/docs/datasets/v2.10.0/en/package_reference/main_classes#datasets.Dataset.load_faiss_index) or [Dataset.load_elasticsearch_index()](/docs/datasets/v2.10.0/en/package_reference/main_classes#datasets.Dataset.load_elasticsearch_index).",
+        "s": "You can store the index on disk with [Dataset.save_faiss_index()](/docs/datasets/v2.10.0/en/package_reference/main_classes#datasets.Dataset.save_faiss_index) or [Dataset.save_elasticsearch_index()](/docs/datasets/v2.10.0/en/package_reference/main_classes#datasets.Dataset.save_elasticsearch_index) and retrieve it later with [Dataset.load_faiss_index()](/docs/datasets/v2.10.0/en/package_reference/main_classes#datasets.Dataset.load_faiss_index) or [Dataset.load_elasticsearch_index()](/docs/datasets/v2.10.0/en/package_reference/main_classes#datasets.Dataset.load_elasticsearch_index)."
+    },
+    {
+        "id": 50,
+        "o": "You can control how a dataset is loaded from the cache by using the `load_from_cache_file` argument in the `Dataset.map()` method. Setting it to `False` will execute the function over the entire dataset again instead of loading the dataset from its previous state.",
+        "s": "By using the `load_from_cache_file` argument in the `Dataset.map()` method, you can determine whether a dataset is loaded from the cache or not. If you set it to `False`, the function will be executed over the entire dataset instead of loading it from its previous state."
+    },
+    {
+        "id": 51,
+        "o": "You can enable or disable caching by setting the `load_from_cache_file` argument in the `Dataset.map()` method or by using the `disable_caching()` function. You can also keep the metric in CPU memory instead of caching it by setting the `keep_in_memory` parameter to `True` when loading the metric.",
+        "s": "You can control caching by adjusting the `load_from_cache_file` argument in the `Dataset.map()` method or by using the `disable_caching()` function. To keep the metric in CPU memory instead of caching it, set the `keep_in_memory` parameter to `True` when loading the metric."
+    },
+    {
+        "id": 52,
+        "o": "You can improve dataset performance by disabling the cache and copying the dataset in-memory. This can be done by setting `datasets.config.IN_MEMORY_MAX_SIZE` or the `HF_DATASETS_IN_MEMORY_MAX_SIZE` environment variable to a nonzero value that fits in your RAM memory.",
+        "s": "By disabling the cache and copying the dataset in-memory, you can enhance the performance of the dataset. This can be achieved by setting `datasets.config.IN_MEMORY_MAX_SIZE` or the `HF_DATASETS_IN_MEMORY_MAX_SIZE` environment variable to a value that is compatible with your RAM memory."
+    },
+    {
+        "id": 53,
+        "o": "To run your own Beam pipeline with Dataflow in Beam Datasets, you need to specify the dataset and configuration you want to process, input your Google Cloud Platform information, specify your Python requirements, and run the pipeline.",
+        "s": "In order to execute a Beam pipeline with Dataflow in Beam Datasets, you must provide the dataset and configuration you wish to process, enter your Google Cloud Platform credentials, designate your Python requirements, and execute the pipeline."
+    },
+    {
+        "id": 54,
+        "o": "Yes, you can use Hugging Face's Datasets with TensorFlow or PyTorch. There are specific guides provided in the \"General usage\" section of the documentation for using Hugging Face's Datasets with these frameworks.",
+        "s": "You can employ Hugging Face's Datasets with either TensorFlow or PyTorch. The \"General usage\" section of the documentation offers specific instructions for using the Datasets with these frameworks."
+    },
+    {
+        "id": 55,
+        "o": "You can load various types of data using Hugging Face's Datasets, including text, audio, vision, and tabular data. There are specific guides provided in the documentation for loading each type of data.",
+        "s": "Using Hugging Face's Datasets, you can load a range of data types, such as text, audio, vision, and tabular data. The documentation provides specific instructions for loading each type of data."
+    },
+    {
+        "id": 56,
+        "o": "The NYU Depth V2 dataset is comprised of video sequences from various indoor scenes, recorded by RGB and depth cameras. The dataset consists of scenes from 3 cities and provides images along with their depth maps as labels.",
+        "s": "The NYU Depth V2 dataset is composed of video sequences from multiple indoor scenes, captured by RGB and depth cameras. It contains scenes from 3 cities and offers images with their corresponding depth maps as labels."
+    },
+    {
+        "id": 57,
+        "o": "We need to first convert the data type of the depth map to `uint8` using `.convert('RGB')` as PIL can\u2019t display `float32` images. Then we can create a colored depth map using `plt.cm` and display it using `plt.imshow()` or the `show_depthmap()` function provided in the guide.",
+        "s": "Using `.convert('RGB')`, we must first convert the data type of the depth map to `uint8` as PIL cannot display `float32` images. Afterwards, we can use `plt.cm` to create a colored depth map and display it with either `plt.imshow()` or the `show_depthmap()` function given in the guide."
+    },
+    {
+        "id": 58,
+        "o": "Yes, there are conceptual guides available to provide high-level explanations for building a better understanding about important topics such as the underlying data format, the cache, and how datasets are generated.",
+        "s": "Conceptual guides are available to help build a better understanding of significant topics like the data format, the cache, and how datasets are created."
+    },
+    {
+        "id": 59,
+        "o": "Dataset repositories offer features such as free dataset hosting, dataset versioning, commit history and diffs, metadata for discoverability, and dataset cards for documentation, licensing, limitations, etc.",
+        "s": "Dataset repositories provide amenities like free data hosting, version control, commit history and diffs, metadata to facilitate discovery, and dataset cards to document licensing, restrictions, and so on."
+    },
+    {
+        "id": 60,
+        "o": "A dataset script is optional if your dataset is in one of the supported formats such as CSV, JSON, JSON lines, text or Parquet. The script also supports many kinds of compressed file types such as GZ, BZ2, LZ4, LZMA or ZSTD. If your dataset is not in a supported format or if you want more control over how your dataset is loaded, you can write your own dataset script.",
+        "s": "If your dataset is not in a supported format like CSV, JSON, JSON lines, text or Parquet, or if you want more control over how your dataset is loaded, you can write your own dataset script. Otherwise, the script also supports many kinds of compressed file types such as GZ, BZ2, LZ4, LZMA or ZSTD, and the dataset script is optional."
+    },
+    {
+        "id": 61,
+        "o": "You should upload the raw data files of the dataset (optional, if they are hosted elsewhere you can specify the URLs in the dataset script) and your dataset loading script (optional if your data files are already in the supported formats csv/jsonl/json/parquet/txt).",
+        "s": "It is optional to upload the raw data files of the dataset, but if they are hosted elsewhere, the URLs should be specified in the dataset script. Additionally, it is also optional to include the dataset loading script if the data files are already in the supported formats such as csv/jsonl/json/parquet/txt."
+    },
+    {
+        "id": 62,
+        "o": "If you wish your dataset script to be reviewed by the Hugging Face team, you can open a discussion in the Community tab of your dataset with the message: \"# Dataset review request for <Dataset name>\". Members of the Hugging Face team will be happy to review your dataset script and give you advice.",
+        "s": "If you would like the Hugging Face team to evaluate your dataset script, you can start a conversation in the Community section of your dataset with the statement: \"# Dataset review request for <Dataset name>\". The Hugging Face team will be glad to review your dataset script and provide feedback."
+    },
+    {
+        "id": 63,
+        "o": "If you think a fix is needed for a legacy GitHub dataset, you can use their \"Community\" tab to open a discussion or create a Pull Request. The code of these datasets is reviewed by the Hugging Face team.",
+        "s": "If you believe a modification is necessary for an existing GitHub dataset, you can initiate a discussion or submit a Pull Request via the \"Community\" tab. The Hugging Face team will then inspect the code of the dataset."
+    },
+    {
+        "id": 64,
+        "o": "Some of the how-to guides available in the Datasets documentation include loading, processing, streaming, using with TensorFlow, using with PyTorch, cache management, cloud storage, search index, metrics, and Beam Datasets.",
+        "s": "The Datasets documentation provides a range of tutorials, such as loading, processing, streaming, integration with TensorFlow and PyTorch, cache management, cloud storage, search index, metrics, and Beam Datasets."
+    },
+    {
+        "id": 65,
+        "o": "Arrow's format allows for zero-copy reads, which removes serialization overhead, and it is column-oriented, making it faster at querying and processing slices or columns of data. Arrow also supports many column types and allows for copy-free hand-offs to standard machine learning tools.",
+        "s": "Arrow's format is designed to enable zero-copy reads, thereby eliminating serialization overhead, and its column-oriented structure makes it highly efficient when it comes to querying and processing data slices or columns. Moreover, Arrow supports a wide range of column types and facilitates copy-free hand-offs to common machine learning tools."
+    },
+    {
+        "id": 66,
+        "o": "Arrow's memory-mapping feature allows for datasets to be backed by an on-disk cache, which is memory-mapped for fast lookup. This architecture allows for large datasets to be used on machines with relatively small device memory.",
+        "s": "Arrow's memory-mapping capability permits datasets to be supported by an on-disk cache, which is mapped to memory for quick retrieval. This design makes it possible to use large datasets on machines with limited device memory."
+    },
+    {
+        "id": 67,
+        "o": "You can create a dataset card by going to your dataset repository on the Hub and clicking on \"Create Dataset Card\". Then, use the Metadata UI to select relevant tags and fill out a template with information about the dataset.",
+        "s": "To make a dataset card, go to your dataset repository on the Hub and click \"Create Dataset Card\". Afterwards, use the Metadata UI to pick applicable tags and fill out the template with details about the dataset."
+    },
+    {
+        "id": 68,
+        "o": "A dataset card should include information about the dataset's contents, context for using the dataset, how it was created, and any other considerations that users should be aware of. You can refer to the Dataset Card Creation Guide for more detailed information about what to include in each section of the card.",
+        "s": "A Dataset Card should provide information regarding the dataset's contents, context for utilization, how it was formulated, and any other relevant considerations that users should take into account. For more detailed information on what to include in each part of the card, please refer to the Dataset Card Creation Guide."
+    },
+    {
+        "id": 69,
+        "o": "The main difference between a Dataset and an IterableDataset is that a Dataset provides random access to the rows, while an IterableDataset loads the data progressively as you iterate over the dataset.",
+        "s": "A major distinction between a Dataset and an IterableDataset is that a Dataset allows for random access to the rows, while an IterableDataset loads the data gradually as it is traversed."
+    },
+    {
+        "id": 70,
+        "o": "An IterableDataset is ideal for big datasets (think hundreds of GBs!) due to its lazy behavior and speed advantages. It is also great for streaming datasets made out of multiple shards, each of which is hundreds of gigabytes.",
+        "s": "The IterableDataset is perfect for large datasets (think hundreds of GBs!) because of its lazy loading and speed benefits. It is also great for streaming datasets composed of multiple shards, each of which is hundreds of gigabytes."
+    },
+    {
+        "id": 71,
+        "o": "Exact shuffling is used for Datasets and shuffles the dataset exactly, while fast approximate shuffling is used for IterableDatasets and uses a shuffle buffer to sample random examples iteratively from the dataset.",
+        "s": "Exact shuffling is employed for Datasets, which shuffles the dataset precisely, while fast approximate shuffling is utilized for IterableDatasets and utilizes a shuffle buffer to take random examples iteratively from the dataset."
+    },
+    {
+        "id": 72,
+        "o": "You can create an IterableDataset from a generator function by using the from_generator method of the IterableDataset class and passing in the generator function and its arguments as arguments to the method.",
+        "s": "The IterableDataset class' from_generator method can be used to construct an IterableDataset from a generator function, with the generator function and its parameters being passed in as arguments."
+    },
+    {
+        "id": 73,
+        "o": "You can shuffle an IterableDataset by using the shuffle method of the IterableDataset class and passing in a seed and buffer size as arguments. The shuffle method only shuffles the shards order and adds a shuffle buffer to your dataset, which keeps the speed of your dataset optimal.",
+        "s": "The IterableDataset class provides a shuffle method which takes a seed and buffer size as arguments. This method rearranges the order of the shards and adds a buffer to the dataset, thus ensuring the speed of the dataset remains optimal."
+    },
+    {
+        "id": 74,
+        "o": "Dataset is a map-style dataset that loads local files entirely, while IterableDataset is a streaming dataset that loads files progressively. Dataset uses eager data processing, while IterableDataset uses lazy data processing. Dataset shuffling is exact, while IterableDataset shuffling is fast and approximate.",
+        "s": "Dataset loads all the local files at once, while IterableDataset streams them in a progressive manner. Dataset performs data processing eagerly, while IterableDataset does it lazily. Dataset shuffling is precise, while IterableDataset shuffling is speedy but not as accurate."
+    },
+    {
+        "id": 75,
+        "o": "The Table class implements all the basic attributes/methods of the pyarrow Table class except the Table transforms: `slice, filter, flatten, combine_chunks, cast, add_column, append_column, remove_column, set_column, rename_columns` and `drop`.",
+        "s": "The Table class does not include the Table transforms: `slice, filter, flatten, combine_chunks, cast, add_column, append_column, remove_column, set_column, rename_columns` and `drop`, which are all basic attributes/methods of the pyarrow Table class."
+    },
+    {
+        "id": 76,
+        "o": "The `validate` method in the Table class is used to perform validation checks. An exception is raised if validation fails. By default only cheap validation checks are run. Pass `full=True` for thorough validation checks (potentially `O(n)`).",
+        "s": "The Table class's `validate` method is employed to execute validation tests. If validation is unsuccessful, an exception will be raised. By default, only inexpensive validation tests are run. To execute a more thorough validation test (which may be `O(n)`), pass `full=True`."
+    },
+    {
+        "id": 77,
+        "o": "The `self_destruct` option in the `to_pandas` method attempts to deallocate the originating Arrow memory while converting the Arrow object to pandas. However, if the object is used after calling `to_pandas` with this option, it will crash the program.",
+        "s": "The `to_pandas` method's `self_destruct` option attempts to free up the Arrow memory when converting the Arrow object to pandas. However, if the object is used after this option is enabled, it will cause the program to crash."
+    },
+    {
+        "id": 78,
+        "o": "The `types_mapper` option in the `to_pandas` method is a function that maps a pyarrow DataType to a pandas `ExtensionDtype`. This can be used to override the default pandas type for conversion of built-in pyarrow types or in absence of `pandas_metadata` in the Table schema.",
+        "s": "The `to_pandas` method's `types_mapper` option is a function that assigns a pyarrow DataType to a pandas `ExtensionDtype`. This can be utilized to supersede the default pandas type for the conversion of built-in pyarrow types or when `pandas_metadata` is not present in the Table schema."
+    },
+    {
+        "id": 79,
+        "o": "The `self_destruct` option in `to_pandas` is an experimental option that, if set to `True`, attempts to deallocate the originating Arrow memory while converting the Arrow object to pandas. However, if the object is used after calling `to_pandas` with this option, it will crash the program.",
+        "s": "If `to_pandas` is called with the experimental `self_destruct` option set to `True`, it will attempt to free up the Arrow memory. However, if the object is used afterwards, it will result in a program crash."
+    },
+    {
+        "id": 80,
+        "o": "The `types_mapper` option in `to_pandas` is a function that maps a pyarrow DataType to a pandas `ExtensionDtype`. This can be used to override the default pandas type for conversion of built-in pyarrow types or in absence of `pandas_metadata` in the Table schema.",
+        "s": "The `types_mapper` option in `to_pandas` is a function that allows one to map a pyarrow DataType to a pandas `ExtensionDtype` for overriding the default pandas type for conversion of built-in pyarrow types or when `pandas_metadata` is not present in the Table schema."
+    },
+    {
+        "id": 81,
+        "o": "The `from_pandas` function takes the following parameters:\n- `df` (pandas.DataFrame): The pandas DataFrame to be converted.\n- `schema` (pyarrow.Schema, optional): The expected schema of the Arrow Table.\n- `preserve_index` (bool, optional): Whether to store the index as an additional column in the resulting Table.\n- `nthreads` (int, optional): If greater than 1, convert columns to Arrow in parallel using indicated number of threads.\n- `columns` (List[str], optional): List of column to be converted.\n- `safe` (bool, optional): Check for overflows or other unsafe conversions.",
+        "s": "The `from_pandas` function has the following parameters:\n- `df` (pandas.DataFrame): The pandas DataFrame to be transformed.\n- `schema` (pyarrow.Schema, optional): The expected schema of the Arrow Table.\n- `preserve_index` (bool, optional): Whether to keep the index as an extra column in the resulting Table.\n- `nthreads` (int, optional): If greater than 1, convert columns to Arrow in parallel using the specified number of threads.\n- `columns` (List[str], optional): List of columns to be converted.\n- `safe` (bool, optional): Check for overflows or other unsafe transformations."
+    },
+    {
+        "id": 82,
+        "o": "The `from_arrays` function takes the following parameters:\n- `arrays` (List[Union[pyarrow.Array, pyarrow.ChunkedArray]]): Equal-length arrays that should form the table.\n- `names` (List[str], optional): Names for the table columns. If not passed, schema must be passed.\n- `schema` (Schema, optional): Schema for the created table. If not passed, names must be passed.\n- `metadata` (Union[dict, Mapping], optional): Optional metadata for the schema (if inferred).",
+        "s": "The `from_arrays` function requires the following: \n- `arrays` (List[Union[pyarrow.Array, pyarrow.ChunkedArray]]): A list of arrays with equal lengths that will form the table.\n- `names` (List[str], optional): Names for the columns of the table. If not given, a schema must be provided.\n- `schema` (Schema, optional): Schema for the created table. If not specified, names must be supplied.\n- `metadata` (Union[dict, Mapping], optional): Optional metadata for the schema (if inferred)."
+    },
+    {
+        "id": 83,
+        "o": "The `from_pydict` function takes the following parameters:\n- `mapping` (Union[dict, Mapping]): A mapping of strings to Arrays or Python lists.\n- `schema` (Schema, optional): If not passed, will be inferred from the Mapping values.\n- `metadata` (Union[dict, Mapping], optional): Optional metadata for the schema (if inferred).",
+        "s": "The `from_pydict` function requires the following:\n- `mapping` (Union[dict, Mapping]): A collection of strings linked to Arrays or Python lists.\n- `schema` (Schema, optional): If not given, it will be determined from the Mapping values.\n- `metadata` (Union[dict, Mapping], optional): Optional metadata for the schema (if inferred)."
+    },
+    {
+        "id": 84,
+        "o": "The `to_pandas` method in the `Table` class is used to convert a table to a `pandas.Series` or `pandas.DataFrame`. It has many optional parameters to control the conversion process, such as specifying the memory pool to use, encoding string and binary types as `pandas.Categorical`, and casting integers with nulls to objects.",
+        "s": "The `Table` class provides a `to_pandas` method for transforming a table into either a `pandas.Series` or `pandas.DataFrame`. It offers a variety of optional parameters to customize the conversion, such as allocating memory, encoding strings and binaries as `pandas.Categorical`, and changing integers with nulls to objects."
+    },
+    {
+        "id": 85,
+        "o": "The parameters of `download_and_prepare()` are `output_dir`, `download_config`, `download_mode`, `verification_mode`, `ignore_verifications`, `try_from_hf_gcs`, `dl_manager`, `base_path`, `use_auth_token`, `file_format`, `max_shard_size`, `num_proc`, `storage_options`, and `download_and_prepare_kwargs`.",
+        "s": "The `download_and_prepare()` function has the following parameters: `output_dir`, `download_config`, `download_mode`, `verification_mode`, `ignore_verifications`, `try_from_hf_gcs`, `dl_manager`, `base_path`, `use_auth_token`, `file_format`, `max_shard_size`, `num_proc`, `storage_options`, and `download_and_prepare_kwargs`."
+    },
+    {
+        "id": 86,
+        "o": "The `download` method of the `StreamingDownloadManager` class returns the path or url that could be opened using the `xopen` function which extends the built-in `open` function to stream data from remote files.",
+        "s": "The `StreamingDownloadManager` class's `download` method returns a path or url that can be opened with the `xopen` function, which is an extension of the native `open` function for streaming data from remote sources."
+    },
+    {
+        "id": 87,
+        "o": "The `force_extract` parameter is a boolean parameter that, when set to `True` and `extract_compressed_file` is also set to `True`, re-extracts the archive and overrides the folder where it was extracted.",
+        "s": "When `force_extract` is set to `True` and `extract_compressed_file` is also enabled, the archive will be re-extracted and the existing extracted folder will be replaced."
+    },
+    {
+        "id": 88,
+        "o": "The `from_spec` function creates a `ReadInstruction` instance out of a string spec, which specifies the split(s) and optional slice(s) to read, as well as optional rounding if percents are used as the slicing unit.",
+        "s": "A `ReadInstruction` instance is generated by the `from_spec` function from a string spec, which details the split(s) and slice(s) to be read, as well as any rounding that may be needed if percentages are employed as the slicing unit."
+    },
+    {
+        "id": 89,
+        "o": "The `load_dataset` function is used to load a dataset from a local directory or from the Hugging Face Hub. It takes several parameters such as `path`, `name`, `data_dir`, `data_files`, `split`, `cache_dir`, `features`, `download_config`, `download_mode`, `verification_mode`, `ignore_verifications`, `keep_in_memory`, `save_infos`, `revision`, `use_auth_token`, `task`, `streaming`, `num_proc`, and `config_kwargs`.",
+        "s": "The `load_dataset` function can be used to obtain a dataset from either a local directory or the Hugging Face Hub. It requires several parameters such as `path`, `name`, `data_dir`, `data_files`, `split`, `cache_dir`, `features`, `download_config`, `download_mode`, `verification_mode`, `ignore_verifications`, `keep_in_memory`, `save_infos`, `revision`, `use_auth_token`, `task`, `streaming`, `num_proc`, and `config_kwargs`."
+    },
+    {
+        "id": 90,
+        "o": "A dataset script in Hugging Face is a small Python script that defines dataset builders, contains the path or URL to the original data files, and the code to load examples from the original data files.",
+        "s": "A Hugging Face dataset script is a Python program that specifies the construction of datasets, provides the location of the source data files, and includes the code to extract examples from the original data."
+    },
+    {
+        "id": 91,
+        "o": "The load_from_disk function loads a dataset that was previously saved using save_to_disk() from a dataset directory, or from a filesystem using either S3FileSystem or any implementation of fsspec.spec.AbstractFileSystem.",
+        "s": "The dataset that was saved using save_to_disk() can be loaded by the load_from_disk function from either a dataset directory or a filesystem, such as S3FileSystem or any other implementation of fsspec.spec.AbstractFileSystem."
+    },
+    {
+        "id": 92,
+        "o": "The keep_in_memory parameter is a boolean that determines whether to copy the dataset in-memory. If None, the dataset will not be copied in-memory unless explicitly enabled by setting datasets.config.IN_MEMORY_MAX_SIZE to nonzero.",
+        "s": "The keep_in_memory parameter is a boolean that decides if the dataset should be copied into memory. If it is set to None, the dataset will not be duplicated in memory unless datasets.config.IN_MEMORY_MAX_SIZE is set to a non-zero value."
+    },
+    {
+        "id": 93,
+        "o": "The load_dataset_builder function loads a dataset builder based on the path or name of the dataset. Depending on the path, the dataset builder that is used comes from a generic dataset script (JSON, CSV, Parquet, text etc.) or from the dataset script (a python file) inside the dataset directory.",
+        "s": "The load_dataset_builder function retrieves a dataset builder depending on the path or name of the dataset. It can be sourced from a generic dataset script (JSON, CSV, Parquet, text etc.) or from the script (a python file) inside the dataset directory."
+    },
+    {
+        "id": 94,
+        "o": "You can use the `get_dataset_config_names` function from the `datasets` module and pass in the dataset name as a parameter. For example, `get_dataset_config_names(\"glue\")` will return a list of available config names for the GLUE dataset.",
+        "s": "The `datasets` module provides the `get_dataset_config_names` function which takes the dataset name as an argument. As an example, calling `get_dataset_config_names(\"glue\")` will return a list of config names for the GLUE dataset."
+    },
+    {
+        "id": 95,
+        "o": "Some of the available configurations for the \"PolyAI/minds14\" dataset include 'cs-CZ', 'de-DE', 'en-AU', 'en-GB', 'en-US', 'es-ES', 'fr-FR', 'it-IT', 'ko-KR', 'nl-NL', 'pl-PL', 'pt-PT', 'ru-RU', 'zh-CN', and 'all'.",
+        "s": "Among the available settings for the \"PolyAI/minds14\" dataset are 'cs-CZ', 'de-DE', 'en-AU', 'en-GB', 'en-US', 'es-ES', 'fr-FR', 'it-IT', 'ko-KR', 'nl-NL', 'pl-PL', 'pt-PT', 'ru-RU', 'zh-CN', and 'all'."
+    },
+    {
+        "id": 96,
+        "o": "The documentation page PACKAGE_REFERENCE/BUILDER_CLASSE exists on the main version. You can click [here](/docs/datasets/main/en/package_reference/builder_classe) to redirect to the main version of the documentation.",
+        "s": "The PACKAGE_REFERENCE/BUILDER_CLASSE documentation page is available on the main version. To access the main version of the documentation, please click [here](/docs/datasets/main/en/package_reference/builder_classe)."
+    },
+    {
+        "id": 97,
+        "o": "Yes, there is a tutorial available for using \ud83e\udd17 Datasets. It covers topics such as loading a dataset from the Hub, preprocessing, evaluating predictions, creating a dataset, and sharing a dataset to the Hub.",
+        "s": "A tutorial on how to use \ud83e\udd17 Datasets is available, which includes instructions on loading a dataset from the Hub, preprocessing, evaluating predictions, creating a dataset, and sharing a dataset to the Hub."
+    },
+    {
+        "id": 98,
+        "o": "You can load a CSV file using the load_dataset() function by passing the data file path to the data_files parameter. You can also load multiple CSV files or map specific CSV files to the train and test splits using this function.",
+        "s": "The load_dataset() function allows you to load a CSV file by providing the data file path to the data_files parameter. It also facilitates the loading of multiple CSV files or mapping specific CSV files to the train and test splits."
+    },
+    {
+        "id": 99,
+        "o": "You can load a dataset from a SQLite database using \ud83e\udd17 Datasets by first creating a SQLite database and then loading the table from the database using the from_sql() method of the Dataset class. You need to pass the table name and the URI string that identifies your database to the from_sql() method.",
+        "s": "\ud83e\udd17 Datasets allows you to load a dataset from a SQLite database by creating the database and then utilizing the from_sql() method of the Dataset class. The from_sql() method requires the table name and the URI string that identifies the database."
+    },
+    {
+        "id": 100,
+        "o": "To work with audio datasets, you need to install the Audio feature using the command \"pip install datasets[audio]\". You also need to use a feature extractor instead of a tokenizer to preprocess the audio data.",
+        "s": "In order to work with audio datasets, you should use the command \"pip install datasets[audio]\" to install the Audio feature. Additionally, a feature extractor should be utilized instead of a tokenizer to preprocess the audio data."
+    },
+    {
+        "id": 101,
+        "o": "For PyTorch, you can use the `set_format()` function to set the dataset format to `torch` and specify the columns you want to format. For TensorFlow, you can use the `to_tf_dataset()` function to set the dataset format to be compatible with TensorFlow.",
+        "s": "In PyTorch, the `set_format()` function can be employed to convert the dataset to the `torch` format and select the desired columns. For TensorFlow, the `to_tf_dataset()` function can be used to make the dataset compatible with TensorFlow."
+    },
+    {
+        "id": 102,
+        "o": "You can create a function to tokenize the dataset using the tokenizer and truncate and pad the text into tidy rectangular tensors. The tokenizer generates three new columns in the dataset: `input_ids`, `token_type_ids`, and an `attention_mask`.",
+        "s": "By employing a tokenizer, you can craft a function to tokenize the dataset and make the text into neat rectangular tensors by truncating and padding. This tokenizer will generate three columns in the dataset: `input_ids`, `token_type_ids`, and an `attention_mask`."
+    },
+    {
+        "id": 103,
+        "o": "To create instances of a config in SuperGlue, you need to specify the values of the attributes of each configuration by creating sub-class instances and listing them under `DatasetBuilder.BUILDER_CONFIGS`.",
+        "s": "In order to generate configs in SuperGlue, you must specify the values of the attributes for each config by making sub-class instances and adding them to the `DatasetBuilder.BUILDER_CONFIGS` list."
+    },
+    {
+        "id": 104,
+        "o": "Users can load a specific configuration of the dataset with the configuration name by using the `load_dataset` function from the `datasets` library and specifying the dataset name and configuration name. For example, `load_dataset('super_glue', 'boolq')`.",
+        "s": "The `load_dataset` function from the `datasets` library can be used to load a particular configuration of a dataset, by specifying the dataset name and configuration name. For instance, `load_dataset('super_glue', 'boolq')`."
+    },
+    {
+        "id": 105,
+        "o": "It may be more convenient for the user to not specify a configuration when loading a dataset because an appropriate default may be an aggregated configuration that loads all the languages of the dataset if the user doesn\u2019t request a particular one.",
+        "s": "The user may find it more advantageous to not specify a configuration when loading a dataset, as a default configuration that loads all the languages of the dataset may be the most suitable choice if no particular language is requested."
+    },
+    {
+        "id": 106,
+        "o": "The metadata of the dataset is stored in the dataset card `README.md` in YAML, which includes information like the number of examples required to confirm the dataset was correctly generated, and information about the dataset like its `features`.",
+        "s": "The `README.md` dataset card stores the metadata of the dataset in YAML, which comprises of details such as the number of examples needed to validate the dataset was created properly, and other data related to the dataset, such as its `features`."
+    },
+    {
+        "id": 107,
+        "o": "You can run the following command to generate your dataset metadata in `README.md` and ensure that your new dataset loading script works correctly: `datasets-cli test path/to/<your-dataset-loading-script> --save_info --all_configs`.",
+        "s": "To make sure that your new dataset loading script is functioning properly, you can execute the command `datasets-cli test path/to/<your-dataset-loading-script> --save_info --all_configs` to generate the metadata of your dataset in `README.md`."
+    },
+    {
+        "id": 108,
+        "o": "Sharding is a technique used in datasets when a dataset is made of many big files. Datasets automatically runs your script in parallel to make it super fast. It can help if you have hundreds or thousands of TAR archives, or JSONL files.",
+        "s": "Sharding is a technique employed on datasets composed of numerous large files. By running your script in parallel, datasets can be made to execute quickly. This is especially beneficial when dealing with hundreds or thousands of TAR archives or JSONL files."
+    },
+    {
+        "id": 109,
+        "o": "To use sharding in your dataset, you can define lists of files in `gen_kwargs` to be shards. Therefore, Datasets can automatically spawn several workers to run `_generate_examples` in parallel, and each worker is given a subset of shards to process. Users can also specify `num_proc=` in `load_dataset()` to specify the number of processes to use as workers.",
+        "s": "Sharding your dataset can be done by defining lists of files in `gen_kwargs`. This will enable Datasets to spawn multiple workers to execute `_generate_examples` in parallel, with each worker being assigned a set of shards. Additionally, `num_proc=` in `load_dataset()` can be used to specify the number of processes to be used as workers."
+    }
+]
