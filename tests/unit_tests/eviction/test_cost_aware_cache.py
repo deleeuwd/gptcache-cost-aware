@@ -1,11 +1,15 @@
 import unittest
 import time
-from unittest.mock import Mock, patch
+import numpy as np
+from unittest.mock import Mock, patch, MagicMock
 
-from gptcache.manager.eviction.manager import EvictionBase
-from gptcache.manager.eviction.cost_aware_cache import CostAwareCacheEviction
+from gptcache.adapter.adapter import adapt
+from gptcache import cache, Config
 from gptcache.manager import get_data_manager
 from gptcache.manager.data_manager import SSDataManager
+from gptcache.manager.eviction.manager import EvictionBase
+from gptcache.manager.eviction.cost_aware_cache import CostAwareCacheEviction
+from gptcache.similarity_evaluation import SearchDistanceEvaluation
 from gptcache.utils.error import NotFoundError
 
 
@@ -501,6 +505,215 @@ class TestCostAwareCacheEviction(unittest.TestCase):
         self.assertEqual(mock_cache.delete.call_count, len(evicted_keys))
         called_args = {call.args[0] for call in mock_cache.delete.call_args_list}
         self.assertEqual(set(evicted_keys), called_args)
+
+
+class TestAdapterCostIntegration(unittest.TestCase):
+    """Test cases for adapter latency measurement and cost-aware integration"""
+
+    def _setup_mock_cache(self):
+        """Helper to set up mock cache components"""
+        cache_base = Mock()
+        cache_base.get_ids.return_value = []
+        vector_base = Mock()
+        
+        data_manager = get_data_manager(
+            cache_base=cache_base,
+            vector_base=vector_base,
+            max_size=10,
+            eviction_base="CostAware"
+        )
+        data_manager.search = Mock(return_value=[])
+        return data_manager
+
+    def test_mock_llm_latency_measurement(self):
+        """Test that adapter correctly measures latency of mock LLM calls"""
+        # Mock LLM that waits exactly 2 seconds
+        def mock_llm_handler(*args, **kwargs):
+            time.sleep(2.0)
+            return "Mock response after 2 seconds"
+        
+        # Track captured latencies
+        captured_latency = []
+        saved_costs = []
+        
+        def mock_update_cache_callback(data, update_func, *args, **kwargs):
+            latency = kwargs.get('llm_latency', None)
+            if latency is not None:
+                captured_latency.append(latency)
+            update_func(data, llm_latency=latency)
+            return data
+        
+        def mock_save(*args, **kwargs):
+            llm_latency = kwargs.get('llm_latency')
+            if llm_latency is not None:
+                saved_costs.append(llm_latency)
+        
+        # Setup cache
+        data_manager = self._setup_mock_cache()
+        data_manager.save = mock_save
+        
+        cache.init(
+            pre_embedding_func=lambda x, **kwargs: x,
+            embedding_func=lambda x, **kwargs: [1, 2, 3],
+            data_manager=data_manager,
+            similarity_evaluation=SearchDistanceEvaluation(),
+            config=Config(similarity_threshold=0.0),  # Ensure cache miss
+        )
+        
+        # Run adapter with mock LLM
+        start_time = time.time()
+        result = adapt(
+            mock_llm_handler,
+            lambda data: data,  # cache_data_convert
+            mock_update_cache_callback,
+            "test prompt",
+        )
+        end_time = time.time()
+        
+        # Verify results
+        self.assertEqual(result, "Mock response after 2 seconds")
+        self.assertEqual(len(captured_latency), 1)
+        self.assertEqual(len(saved_costs), 1)
+        
+        # Verify latency measurements
+        measured_latency = captured_latency[0]
+        saved_latency = saved_costs[0]
+        
+        self.assertAlmostEqual(measured_latency, 2.0, delta=0.2)
+        self.assertAlmostEqual(measured_latency, saved_latency, delta=0.001)
+        self.assertAlmostEqual(end_time - start_time, 2.0, delta=0.5)
+
+    def test_cost_aware_eviction_uses_adapter_latency(self):
+        """Test that cost-aware eviction policy receives and uses latency from adapter"""
+        # Create eviction policy
+        evicted_keys = []
+        eviction = CostAwareCacheEviction(
+            maxsize=3, 
+            clean_size=2, 
+            on_evict=lambda keys: evicted_keys.extend(keys)
+        )
+        
+        # Mock storage and vector base
+        mock_storage = MagicMock()
+        mock_storage.batch_insert.return_value = [1, 2, 3, 4]
+        mock_storage.get_ids.return_value = []
+        mock_vector_base = MagicMock()
+        
+        # Create data manager with cost-aware eviction
+        data_manager = SSDataManager(
+            s=mock_storage,
+            v=mock_vector_base, 
+            o=None,
+            e=eviction,
+            max_size=3,
+            clean_size=2,
+            policy="CostAware"
+        )
+        
+        # Test data with different costs
+        questions = ["Fast", "Medium", "Slow", "Very slow"]
+        answers = ["Fast answer", "Medium answer", "Slow answer", "Very slow answer"]  
+        embeddings = [np.array([1, 2, 3]), np.array([4, 5, 6]), np.array([7, 8, 9]), np.array([10, 11, 12])]
+        costs = [0.5, 1.5, 3.0, 5.0]
+        
+        # Import data with costs
+        data_manager.import_data(
+            questions=questions,
+            answers=answers,
+            embedding_datas=embeddings,
+            session_ids=[None] * 4,
+            costs=costs
+        )
+        
+        # Verify eviction behavior
+        self.assertGreater(len(evicted_keys), 0)
+        self.assertEqual(len(eviction._cache_info), 2)  # 4 - 2 = 2 remaining
+        self.assertEqual(len(evicted_keys), 2)
+        
+        # Check that higher-cost items remain
+        remaining_costs = sorted([eviction._cache_info[key]["cost"] for key in eviction._cache_info])
+        self.assertEqual(remaining_costs, [3.0, 5.0])
+        
+        # Verify cost mapping for remaining IDs
+        returned_ids = mock_storage.batch_insert.return_value
+        for idx, cid in enumerate(returned_ids):
+            if cid in eviction._cache_info:
+                self.assertEqual(eviction._cache_info[cid]["cost"], costs[idx])
+
+    def test_adapter_handles_zero_latency_gracefully(self):
+        """Test that adapter handles very fast (near-zero latency) operations"""
+        def instant_mock_llm(*args, **kwargs):
+            return "Instant response"
+            
+        captured_latency = []
+        saved_costs = []
+        
+        def mock_update_cache_callback(data, update_func, *args, **kwargs):
+            latency = kwargs.get('llm_latency', None)
+            if latency is not None:
+                captured_latency.append(latency)
+            update_func(data, llm_latency=latency)
+            return data
+        
+        def mock_save(*args, **kwargs):
+            llm_latency = kwargs.get('llm_latency')
+            if llm_latency is not None:
+                saved_costs.append(llm_latency)
+        
+        # Setup cache
+        data_manager = self._setup_mock_cache()
+        data_manager.save = mock_save
+        
+        cache.init(
+            pre_embedding_func=lambda x, **kwargs: x,
+            embedding_func=lambda x, **kwargs: [1, 2, 3],
+            data_manager=data_manager,
+            similarity_evaluation=SearchDistanceEvaluation(),
+            config=Config(similarity_threshold=0.0),
+        )
+        
+        # Run adapter with instant LLM
+        result = adapt(
+            instant_mock_llm,
+            lambda data: data,
+            mock_update_cache_callback,
+            "test prompt",
+        )
+        
+        # Verify results
+        self.assertEqual(result, "Instant response")
+        self.assertEqual(len(captured_latency), 1)
+        self.assertEqual(len(saved_costs), 1)
+        
+        # Verify latency is small but positive
+        measured_latency = captured_latency[0]
+        self.assertGreaterEqual(measured_latency, 0)
+        self.assertLess(measured_latency, 0.1)
+
+    def test_different_llm_latencies_result_in_different_costs(self):
+        """Test that different LLM latencies result in appropriately different costs"""
+        # Create cost-aware eviction 
+        eviction = CostAwareCacheEviction(maxsize=10, clean_size=2)
+        
+        # Test different latency values
+        latencies = [0.1, 0.5, 1.0, 2.0, 5.0]
+        
+        for i, latency in enumerate(latencies):
+            key = f"key_{i}"
+            eviction.put([(key, latency)])
+        
+        # Verify all entries were stored with correct costs
+        self.assertEqual(len(eviction._cache_info), len(latencies))
+        
+        for i, expected_latency in enumerate(latencies):
+            key = f"key_{i}"
+            stored_cost = eviction._cache_info[key]["cost"]
+            self.assertEqual(stored_cost, expected_latency)
+        
+        # Test adding more entries - should not trigger eviction yet
+        eviction.put([("trigger_key", 10.0)])
+        self.assertEqual(len(eviction._cache_info), len(latencies) + 1)
+
 
 if __name__ == "__main__":
     unittest.main()

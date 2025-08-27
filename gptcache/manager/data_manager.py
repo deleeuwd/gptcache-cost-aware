@@ -273,7 +273,8 @@ class SSDataManager(DataManager):
                 data_manager.save('hello', 'hi', np.random.random((128, )).astype('float32'))
         """
         session = kwargs.get("session", None)
-        cost = kwargs.get("cost", None)  # Extract cost information
+        # Handle both 'cost' and 'llm_latency' for compatibility
+        cost = kwargs.get("cost", None) or kwargs.get("llm_latency", None)
         session_id = session.name if session else None
         
         # Pass cost to import_data method
