@@ -90,13 +90,11 @@ def run_workload(name, prompts, llm, policy, provider, model):
     process = psutil.Process()
     memory_samples, cpu_samples = [], []
     
-    for i, item in enumerate(tqdm(prompts, desc=name)):
-        q, expected_a = item['q'], item['a']
-        
+    for i, q in enumerate(tqdm(prompts, desc=name)):
         t0 = time.time()
         a = cache_get_compat(q)
         if a is None:
-            a = expected_a if provider == "dummy" else llm.generate(q)
+            a = llm.generate(q)  # Always use the provider's generate method
             cache_put_compat(q, a)
         else:
             hits += 1
@@ -144,11 +142,15 @@ def main():
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--use_faiss", action="store_true")
     parser.add_argument("--max_size", type=int, default=15)
+    # Simulation is enabled by default. Use --no-simulate-latency to disable it.
+    parser.add_argument("--no-simulate-latency", dest="simulate_latency", action="store_false", default=True,
+                        help="Disable latency simulation for the dummy provider (useful for deterministic timing)")
     args = parser.parse_args()
 
     # Initialize
     random.seed(args.seed)
-    llm = get_provider(args.provider, model=args.model)
+    # Pass simulate_latency flag through to provider (ignored by real providers)
+    llm = get_provider(args.provider, model=args.model, simulate_latency=args.simulate_latency)
     onnx = Onnx()
     
     # Prepare workloads
@@ -166,7 +168,7 @@ def main():
         warm_samples = []
         for k, v in workload_data.items():
             for i in range(min(len(v), 2)):
-                warm_samples.append(v[i]['q'])
+                warm_samples.append(v[i])
         if not warm_samples:
             warm_samples = ["warm up prompt 1", "warm up prompt 2"]
         for _ in range(args.warmup_iters):
@@ -174,12 +176,7 @@ def main():
                 onnx.to_embeddings(sample)
         print("ONNX warm-up complete.")
 
-    # Validate workloads
-    for name, data in workload_data.items():
-        unique_q = len({d['q'] for d in data})
-        if args.max_size >= unique_q:
-            print(f"WARNING: workload '{name}' has {unique_q} unique prompts but max_size={args.max_size}.")
-    
+
     # Run benchmarks
     results = {}
     for policy in args.policies:
