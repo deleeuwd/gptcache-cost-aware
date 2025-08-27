@@ -133,8 +133,8 @@ def run_workload(name, prompts, llm, policy, provider, model):
 def main():
     # Parse arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument("--policies", nargs="+", default=["LRU","LFU","FIFO","RR"], 
-                       choices=["LRU","LFU","FIFO","RR"])
+    parser.add_argument("--policies", nargs="+", default=["LRU","LFU","FIFO","RR","CostAware"], 
+                       choices=["LRU","LFU","FIFO","RR","CostAware"])
     parser.add_argument("--workloads", nargs="+", default=["repetitive","novel","repetitive-long","novel-long"], 
                        choices=["repetitive","novel","repetitive-long","novel-long"])
     parser.add_argument("--provider", default="dummy", choices=["dummy","ollama"])
