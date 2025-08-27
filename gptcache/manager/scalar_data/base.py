@@ -69,6 +69,7 @@ class CacheData:
     session_id: Optional[str] = None
     create_on: Optional[datetime] = None
     last_access: Optional[datetime] = None
+    cost: Optional[float] = None
 
     def __init__(
         self,
@@ -78,6 +79,7 @@ class CacheData:
         session_id=None,
         create_on=None,
         last_access=None,
+        cost=None,
     ):
         self.question = question
         self.answers = []
@@ -94,6 +96,7 @@ class CacheData:
         self.session_id = session_id
         self.create_on = create_on
         self.last_access = last_access
+        self.cost = cost
 
 
 class CacheStorage(metaclass=ABCMeta):
