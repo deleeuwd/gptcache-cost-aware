@@ -37,12 +37,7 @@ def build_data_manager(backends: str, dim: int, eviction: str, max_size: int):
     from gptcache.manager import get_data_manager, CacheBase, VectorBase
     cache_base = CacheBase("sqlite")
     vector_base = VectorBase("faiss", dimension=dim)
-    
-    # Handle CostAware eviction policy
-    if eviction == "CostAware":
-        return get_data_manager(cache_base, vector_base, max_size=max_size, eviction_base="CostAware")
-    else:
-        return get_data_manager(cache_base, vector_base, max_size=max_size, eviction=eviction)
+    return get_data_manager(cache_base, vector_base, max_size=max_size, eviction=eviction)
 
 
 def cache_get_compat(q: str):
@@ -181,30 +176,34 @@ def main():
     results = {}
     for policy in args.policies:
         print(f"\n=== Running policy: {policy} ===")
-        clean_cache_artifacts()
-
-        backends = "sqlite,faiss" if args.use_faiss else "sqlite"
-        dm = build_data_manager(backends, onnx.dimension, eviction=policy, max_size=args.max_size)
-        cache.init(
-            pre_embedding_func=get_prompt,
-            embedding_func=onnx.to_embeddings,
-            data_manager=dm,
-            similarity_evaluation=SearchDistanceEvaluation(),
-            config=Config(similarity_threshold=0.95),
-        )
-        
-        # Run workloads for this policy
         results[policy] = {}
+
         for workload_name, data in workload_data.items():
+            # Ensure a clean state per run (policy + workload)
+            clean_cache_artifacts()
+
+            backends = "sqlite,faiss" if args.use_faiss else "sqlite"
+            dm = build_data_manager(backends, onnx.dimension, eviction=policy, max_size=args.max_size)
+
+            # Initialize cache for this specific run
+            cache.init(
+                pre_embedding_func=get_prompt,
+                embedding_func=onnx.to_embeddings,
+                data_manager=dm,
+                similarity_evaluation=SearchDistanceEvaluation(),
+                config=Config(similarity_threshold=0.95),
+            )
+
+            # Run the workload
             metrics = run_workload(f"{policy}_{workload_name}", data, llm, policy, args.provider, args.model)
             results[policy][workload_name] = dict(zip(['hit_rate', 'latency_ms', 'qps', 'avg_memory_mb', 'avg_cpu_percent', 'gpu_util'], metrics))
-        
-        # Clean up cache
-        try:
-            if hasattr(cache, 'data_manager') and cache.data_manager:
-                cache.data_manager.close()
-        except Exception:
-            pass
+
+            # Clean up cache/data manager after the run to avoid cross-run state
+            try:
+                if hasattr(cache, 'data_manager') and cache.data_manager:
+                    cache.data_manager.close()
+            except Exception:
+                pass
     
     print_and_save_results(args, results)
     
