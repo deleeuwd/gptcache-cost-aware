@@ -255,11 +255,13 @@ def adapt(llm_handler, cache_data_convert, update_cache_callback, *args, **kwarg
     if cache_enable:
         try:
 
-            def update_cache_func(handled_llm_data, question=None):
+            def update_cache_func(handled_llm_data, question=None, llm_latency=None):
                 if question is None:
                     question = pre_store_data
                 else:
                     question.content = pre_store_data
+                # Calculate total latency from adapter start
+                total_latency = round(time.time() - start_time, 6)
                 time_cal(
                     chat_cache.data_manager.save,
                     func_name="save",
@@ -270,6 +272,7 @@ def adapt(llm_handler, cache_data_convert, update_cache_callback, *args, **kwarg
                     embedding_data,
                     extra_param=context.get("save_func", None),
                     session=session,
+                    llm_latency=total_latency,
                 )
                 if (
                     chat_cache.report.op_save.count > 0
@@ -279,7 +282,7 @@ def adapt(llm_handler, cache_data_convert, update_cache_callback, *args, **kwarg
                     chat_cache.flush()
 
             llm_data = update_cache_callback(
-                llm_data, update_cache_func, *args, **kwargs
+                llm_data, update_cache_func, *args, llm_latency=round(time.time() - start_time, 6), **kwargs
             )
         except Exception as e:  # pylint: disable=W0703
             gptcache_log.warning("failed to save the data to cache, error: %s", e)
@@ -299,6 +302,7 @@ async def aadapt(
     :return: llm result
     """
     start_time = time.time()
+    search_only_flag = kwargs.pop("search_only", False)
     user_temperature = "temperature" in kwargs
     user_top_k = "top_k" in kwargs
     temperature = kwargs.pop("temperature", 0.0)
@@ -505,16 +509,21 @@ async def aadapt(
             llm_handler, cache_data_convert, update_cache_callback, *args, **kwargs
         )
     else:
+        if search_only_flag:
+            # cache miss
+            return None
         llm_data = await llm_handler(*args, **kwargs)
 
     if cache_enable:
         try:
 
-            def update_cache_func(handled_llm_data, question=None):
+            def update_cache_func(handled_llm_data, question=None, llm_latency=None):
                 if question is None:
                     question = pre_store_data
                 else:
                     question.content = pre_store_data
+                # Calculate total latency from adapter start
+                total_latency = round(time.time() - start_time, 6)
                 time_cal(
                     chat_cache.data_manager.save,
                     func_name="save",
@@ -525,6 +534,7 @@ async def aadapt(
                     embedding_data,
                     extra_param=context.get("save_func", None),
                     session=session,
+                    llm_latency=total_latency,
                 )
                 if (
                     chat_cache.report.op_save.count > 0
@@ -533,7 +543,7 @@ async def aadapt(
                 ):
                     chat_cache.flush()
             llm_data = update_cache_callback(
-                llm_data, update_cache_func, *args, **kwargs
+                llm_data, update_cache_func, *args, llm_latency=round(time.time() - start_time, 6), **kwargs
             )
         except Exception:  # pylint: disable=W0703
             gptcache_log.error("failed to save the data to cache", exc_info=True)

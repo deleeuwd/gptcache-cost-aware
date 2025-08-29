@@ -36,6 +36,7 @@ class DataManager(metaclass=ABCMeta):
             answers: List[Any],
             embedding_datas: List[Any],
             session_ids: List[Optional[str]],
+            costs: List[Optional[float]] = None,
     ):
         pass
 
@@ -136,6 +137,7 @@ class MapDataManager(DataManager):
         answers: List[Any],
         embedding_datas: List[Any],
         session_ids: List[Optional[str]],
+        costs: List[Optional[float]] = None,
     ):
         if (
             len(questions) != len(answers)
@@ -271,8 +273,15 @@ class SSDataManager(DataManager):
                 data_manager.save('hello', 'hi', np.random.random((128, )).astype('float32'))
         """
         session = kwargs.get("session", None)
+        # Handle both 'cost' and 'llm_latency' for compatibility
+        cost = kwargs.get("cost", None) or kwargs.get("llm_latency", None)
         session_id = session.name if session else None
-        self.import_data([question], [answer], [embedding_data], [session_id])
+        
+        # Pass cost to import_data method
+        if cost is not None:
+            self.import_data([question], [answer], [embedding_data], [session_id], [cost])
+        else:
+            self.import_data([question], [answer], [embedding_data], [session_id])
 
     def _process_answer_data(self, answers: Union[Answer, List[Answer]]):
         if isinstance(answers, Answer):
@@ -303,6 +312,7 @@ class SSDataManager(DataManager):
         answers: List[Answer],
         embedding_datas: List[Any],
         session_ids: List[Optional[str]],
+        costs: List[Optional[float]] = None,
     ):
         if (
             len(questions) != len(answers)
@@ -310,6 +320,10 @@ class SSDataManager(DataManager):
             or len(questions) != len(session_ids)
         ):
             raise ParamError("Make sure that all parameters have the same length")
+        
+        if costs is not None and len(costs) != len(questions):
+            raise ParamError("Cost list must have the same length as other parameters")
+        
         cache_datas = []
         embedding_datas = [
             normalize(embedding_data) for embedding_data in embedding_datas
@@ -319,6 +333,8 @@ class SSDataManager(DataManager):
                 ans = self._process_answer_data(answers[i])
             else:
                 ans = answers[i]
+            
+            cost = costs[i] if costs is not None else None
 
             cache_datas.append(
                 CacheData(
@@ -326,6 +342,7 @@ class SSDataManager(DataManager):
                     answers=ans,
                     embedding_data=embedding_data.astype("float32"),
                     session_id=session_ids[i],
+                    cost=cost,
                 )
             )
         ids = self.s.batch_insert(cache_datas)
@@ -335,7 +352,12 @@ class SSDataManager(DataManager):
                 for i, embedding_data in enumerate(embedding_datas)
             ]
         )
-        self.eviction_base.put(ids)
+        
+        # Pass cost information to eviction policy for cost-aware eviction
+        if hasattr(self.eviction_base, 'policy') and self.eviction_base.policy == "CostAware" and costs is not None:
+            self.eviction_base.put([(ids[i], costs[i]) for i in range(len(ids))])
+        else:
+            self.eviction_base.put(ids)
 
     def get_scalar_data(self, res_data, **kwargs) -> Optional[CacheData]:
         session = kwargs.get("session", None)

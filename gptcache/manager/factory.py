@@ -5,6 +5,7 @@ from typing import Union, Callable
 from gptcache.manager import CacheBase, VectorBase, ObjectBase
 from gptcache.manager.data_manager import SSDataManager, MapDataManager
 from gptcache.manager.eviction import EvictionBase
+from gptcache.manager.eviction.manager import EvictionBase as EvictionBaseClass
 from gptcache.utils.log import gptcache_log
 
 
@@ -193,14 +194,20 @@ def get_data_manager(
     """
     if not cache_base and not vector_base:
         return MapDataManager(data_path, max_size, get_data_container)
-
     if isinstance(cache_base, str):
         cache_base = CacheBase(name=cache_base)
     if isinstance(vector_base, str):
         vector_base = VectorBase(name=vector_base)
     if isinstance(object_base, str):
         object_base = ObjectBase(name=object_base)
-    if isinstance(eviction_base, str) and eviction_base != "memory":
+    if eviction == "CostAware" or eviction_base == "CostAware":
+        eviction_base = EvictionBaseClass.get(
+                name="CostAware",
+                policy=eviction,
+                maxsize=max_size,
+                clean_size=clean_size if clean_size else int(max_size * 0.2)
+            )
+    elif isinstance(eviction_base, str) and eviction_base != "memory":
         eviction_base = EvictionBase(name=eviction_base)
     assert cache_base and vector_base
     return SSDataManager(cache_base, vector_base, object_base, eviction_base, max_size, clean_size, eviction)

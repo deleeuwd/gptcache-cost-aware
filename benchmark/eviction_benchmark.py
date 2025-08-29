@@ -37,12 +37,7 @@ def build_data_manager(backends: str, dim: int, eviction: str, max_size: int):
     from gptcache.manager import get_data_manager, CacheBase, VectorBase
     cache_base = CacheBase("sqlite")
     vector_base = VectorBase("faiss", dimension=dim)
-    
-    # Handle CostAware eviction policy
-    if eviction == "CostAware":
-        return get_data_manager(cache_base, vector_base, max_size=max_size, eviction_base="CostAware")
-    else:
-        return get_data_manager(cache_base, vector_base, max_size=max_size, eviction=eviction)
+    return get_data_manager(cache_base, vector_base, max_size=max_size, eviction=eviction)
 
 
 def cache_get_compat(q: str):
@@ -90,13 +85,11 @@ def run_workload(name, prompts, llm, policy, provider, model):
     process = psutil.Process()
     memory_samples, cpu_samples = [], []
     
-    for i, item in enumerate(tqdm(prompts, desc=name)):
-        q, expected_a = item['q'], item['a']
-        
+    for i, q in enumerate(tqdm(prompts, desc=name)):
         t0 = time.time()
         a = cache_get_compat(q)
         if a is None:
-            a = expected_a if provider == "dummy" else llm.generate(q)
+            a = llm.generate(q)  # Always use the provider's generate method
             cache_put_compat(q, a)
         else:
             hits += 1
@@ -133,8 +126,8 @@ def run_workload(name, prompts, llm, policy, provider, model):
 def main():
     # Parse arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument("--policies", nargs="+", default=["LRU","LFU","FIFO","RR"], 
-                       choices=["LRU","LFU","FIFO","RR"])
+    parser.add_argument("--policies", nargs="+", default=["LRU","LFU","FIFO","RR","CostAware"], 
+                       choices=["LRU","LFU","FIFO","RR","CostAware"])
     parser.add_argument("--workloads", nargs="+", default=["repetitive","novel","repetitive-long","novel-long"], 
                        choices=["repetitive","novel","repetitive-long","novel-long"])
     parser.add_argument("--provider", default="dummy", choices=["dummy","ollama"])
@@ -144,11 +137,15 @@ def main():
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--use_faiss", action="store_true")
     parser.add_argument("--max_size", type=int, default=15)
+    # Simulation is enabled by default. Use --no-simulate-latency to disable it.
+    parser.add_argument("--no-simulate-latency", dest="simulate_latency", action="store_false", default=True,
+                        help="Disable latency simulation for the dummy provider (useful for deterministic timing)")
     args = parser.parse_args()
 
     # Initialize
     random.seed(args.seed)
-    llm = get_provider(args.provider, model=args.model)
+    # Pass simulate_latency flag through to provider (ignored by real providers)
+    llm = get_provider(args.provider, model=args.model, simulate_latency=args.simulate_latency)
     onnx = Onnx()
     
     # Prepare workloads
@@ -166,7 +163,7 @@ def main():
         warm_samples = []
         for k, v in workload_data.items():
             for i in range(min(len(v), 2)):
-                warm_samples.append(v[i]['q'])
+                warm_samples.append(v[i])
         if not warm_samples:
             warm_samples = ["warm up prompt 1", "warm up prompt 2"]
         for _ in range(args.warmup_iters):
@@ -174,40 +171,39 @@ def main():
                 onnx.to_embeddings(sample)
         print("ONNX warm-up complete.")
 
-    # Validate workloads
-    for name, data in workload_data.items():
-        unique_q = len({d['q'] for d in data})
-        if args.max_size >= unique_q:
-            print(f"WARNING: workload '{name}' has {unique_q} unique prompts but max_size={args.max_size}.")
-    
+
     # Run benchmarks
     results = {}
     for policy in args.policies:
         print(f"\n=== Running policy: {policy} ===")
-        clean_cache_artifacts()
-
-        backends = "sqlite,faiss" if args.use_faiss else "sqlite"
-        dm = build_data_manager(backends, onnx.dimension, eviction=policy, max_size=args.max_size)
-        cache.init(
-            pre_embedding_func=get_prompt,
-            embedding_func=onnx.to_embeddings,
-            data_manager=dm,
-            similarity_evaluation=SearchDistanceEvaluation(),
-            config=Config(similarity_threshold=0.95),
-        )
-        
-        # Run workloads for this policy
         results[policy] = {}
+
         for workload_name, data in workload_data.items():
+            # Ensure a clean state per run (policy + workload)
+            clean_cache_artifacts()
+
+            backends = "sqlite,faiss" if args.use_faiss else "sqlite"
+            dm = build_data_manager(backends, onnx.dimension, eviction=policy, max_size=args.max_size)
+
+            # Initialize cache for this specific run
+            cache.init(
+                pre_embedding_func=get_prompt,
+                embedding_func=onnx.to_embeddings,
+                data_manager=dm,
+                similarity_evaluation=SearchDistanceEvaluation(),
+                config=Config(similarity_threshold=0.95),
+            )
+
+            # Run the workload
             metrics = run_workload(f"{policy}_{workload_name}", data, llm, policy, args.provider, args.model)
             results[policy][workload_name] = dict(zip(['hit_rate', 'latency_ms', 'qps', 'avg_memory_mb', 'avg_cpu_percent', 'gpu_util'], metrics))
-        
-        # Clean up cache
-        try:
-            if hasattr(cache, 'data_manager') and cache.data_manager:
-                cache.data_manager.close()
-        except Exception:
-            pass
+
+            # Clean up cache/data manager after the run to avoid cross-run state
+            try:
+                if hasattr(cache, 'data_manager') and cache.data_manager:
+                    cache.data_manager.close()
+            except Exception:
+                pass
     
     print_and_save_results(args, results)
     

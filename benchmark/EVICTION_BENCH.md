@@ -9,7 +9,7 @@ From the project root (local environment or inside any development container):
 ```bash
 cd benchmark
 # small smoke test (fast, offline)
-python eviction_benchmark.py --n 50 --warmup-iters 0 --policies LRU --workloads repetitive --provider dummy --max_size 5
+python eviction_benchmark.py --n 50 --warmup-iters 0 --policies LRU --workloads repetitive --provider dummy --max_size 15
 ```
 
 ## Command line options (short)
@@ -21,7 +21,9 @@ python eviction_benchmark.py --n 50 --warmup-iters 0 --policies LRU --workloads 
 - `--provider` : `dummy` or `ollama` (default: dummy)
 - `--model` : model name passed to provider (default: llama3)
 - `--use_faiss` : enable faiss vector backend (flag)
-- `--max_size` : cache max size (default: 20)
+- `--max_size` : cache max size (default: 15)
+- `--seed` : random seed for reproducibility (default: 42)
+- `--no-simulate-latency` : disable latency simulation for dummy provider (flag)
 
 ## Workloads and mock data (how workloads are constructed)
 
@@ -85,7 +87,7 @@ for name, (size, rep, long) in workload_configs.items():
 
 3. Create custom workload programmatically
 
-	You can bypass `workload_configs` entirely and construct `workload_data` yourself. Any loader that returns `List[dict]` with `{"q":..., "a":...}` works.
+	You can bypass `workload_configs` entirely and construct `workload_data` yourself. Any loader that returns a list of prompt strings works.
 
 ```python
 from mock_data_loader import load_mock_data
@@ -102,7 +104,6 @@ custom = load_mock_data(size=150, isLong=False, isSimilar=True, repeated=2, isSh
 - `size` (int): number of entries to return
 - `isLong` (bool): use long dataset (`mock_data_long.json`) when True
 - `isSimilar` (bool): include both original (`o`) and similar (`s`) prompts as separate entries
-- `isMock` (bool): when True, set the `a` field to the mock answer (`s`); False produces `a=None`
 - `isShuffled` (bool): shuffle final workload
 - `repeated` (int): how many extra copies to create per base prompt (controls repetition)
 
@@ -111,14 +112,19 @@ custom = load_mock_data(size=150, isLong=False, isSimilar=True, repeated=2, isSh
 - `benchmark/mock_data_short.json` — short prompts used by default
 - `benchmark/mock_data_long.json` — longer prompts used for the `*-long` workloads
 
+
+
 To add new prompts, append entries to either JSON file. Each entry has the shape:
 
 ```json
 {
-  "o": "original prompt text",
-  "s": "short mock answer or similar prompt"
+	"id": 1,
+	"o": "original prompt text",
+	"s": "similar prompt text"
 }
 ```
+
+The `id` field is present for reference but is ignored by the loader. Only the `o` and `s` fields are used to generate prompts.
 
 If you prefer separate datasets, add a new JSON file and either extend `load_mock_data` to accept a filename or pre-load that file and pass the generated list directly to the benchmark.
 
@@ -135,6 +141,18 @@ If you prefer separate datasets, add a new JSON file and either extend `load_moc
 
 ---
 
+
+# Provider file
+
+File: `providers.py`
+
+The benchmark supports two types of providers for generating answers to prompts:
+
+- **DummyLLM**: A fast, local mock provider that generates synthetic answers. It can simulate latency for more realistic timing, or run instantly for deterministic tests. Use with `--provider dummy`.
+- **OllamaLLM**: Connects to an external Ollama server to generate answers using real LLMs (e.g., Llama 3). Use with `--provider ollama` and set the model name with `--model`.
+
+The provider is selected via the `--provider` flag. The benchmark uses the provider’s `generate(prompt)` method to get answers for cache misses.
+
 # Mock data loader
 
 File: `mock_data_loader.py`
@@ -142,28 +160,28 @@ File: `mock_data_loader.py`
 Purpose:
 - Produce synthetic benchmark inputs from `mock_data_short.json` and `mock_data_long.json`.
 
+
 Function signature:
 
 ```
-load_mock_data(size=100, isLong=False, isSimilar=False, isMock=True, isShuffled=False, repeated=0)
+load_mock_data(size=100, isLong=False, isSimilar=False, isShuffled=False, repeated=0)
 ```
 
 Parameters:
 - `size` (int): number of entries to return.
 - `isLong` (bool): choose `mock_data_long.json` (True) or `mock_data_short.json` (False).
 - `isSimilar` (bool): if True, for each original prompt `o` the loader will also add the similar prompt `s` as a separate entry.
-- `isMock` (bool): if True the loader sets the `a` (answer) field to the mock answer `s` from the dataset; set False if you only want questions.
 - `isShuffled` (bool): shuffle the returned list if True.
 - `repeated` (int): how many extra repetitions of each prompt to insert (0 means one occurrence).
 
 Return shape:
-- `List[dict]` where each item is `{"q": <question>, "a": <answer or None>}`.
+- `List[str]` where each item is a prompt string.
 
 Examples:
 
 ```python
 # Small set, include similar entries and shuffle
-load_mock_data(size=20, isLong=False, isSimilar=True, isMock=True, isShuffled=True)
+load_mock_data(size=20, isLong=False, isSimilar=True, isShuffled=True)
 
 # Large repeated workload
 load_mock_data(size=1000, isLong=True, repeated=2)
