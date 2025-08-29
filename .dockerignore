@@ -12,3 +12,18 @@ logs/
 *.index
 *.sqlite
 cache.db
+
+# Development Docker scripts
+dev.bat
+dev-docker.ps1
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files  
+.DS_Store
+Thumbs.db

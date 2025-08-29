@@ -1,0 +1,39 @@
+# Development Dockerfile
+FROM python:3.11-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONUTF8=1 \
+    PIP_NO_CACHE_DIR=1 \
+    HF_HUB_DISABLE_SYMLINKS_WARNING=1
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    vim \
+    nano \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory to project root
+WORKDIR /workspace
+
+# Copy requirements first for better Docker layer caching
+COPY requirements.txt setup.py MANIFEST.in ./
+
+# Install Python dependencies
+RUN python -m pip install -U pip setuptools wheel
+
+# Install requirements
+RUN python -m pip install -r requirements.txt
+
+# Install additional dependencies commonly used
+RUN python -m pip install faiss-cpu onnxruntime
+
+# Copy setup files and install in development mode
+# This will be overridden by volume mount in development
+COPY . .
+RUN python -m pip install -e .
+
+# Default command is bash for interactive development
+CMD ["/bin/bash"]

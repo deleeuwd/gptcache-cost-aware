@@ -1,3 +1,8 @@
 numpy
 cachetools
 requests
+tqdm
+transformers
+SQLAlchemy
+psutil
+gputil
