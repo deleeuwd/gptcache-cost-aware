@@ -1,15 +1,20 @@
 import os, requests, random, time
 
 class DummyLLM:
-    def __init__(self, simulate_latency: bool = True, **kw):
+    def __init__(self, simulate_latency: bool = True, random_response: bool = True, multiplier: float = 5, seed: int = None, **kw):
         # If simulate_latency is False, generate instantly (useful for exact timing tests)
+        # random_response controls whether the answer length multiplier is drawn randomly.
+        # If multiplier is provided it will be used as a fixed multiplier (overrides random_response).
         self.simulate_latency = simulate_latency
+        self.random_response = random_response
+        # Use a local RNG if seed provided for deterministic behavior
+        self._rng = random.Random(seed) if seed is not None else random
+        self.multiplier = (self._rng.uniform(2, 10) if random_response else multiplier)
 
     def generate(self, prompt: str) -> str:
-        # Generate answer that's 2-10x longer than prompt (more realistic)
-        multiplier = random.uniform(2, 10)
-        answer_length = int(len(prompt) * multiplier)
-        
+        # Determine answer length based on multiplier
+        answer_length = int(len(prompt) * self.multiplier)
+
         # Create a realistic answer by repeating/extending content
         base_answer = f"This is a comprehensive answer to your question about: {prompt[:50]}..."
         answer = (base_answer * ((answer_length // len(base_answer)) + 1))[:answer_length]
