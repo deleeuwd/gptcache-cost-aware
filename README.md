@@ -1,4 +1,4 @@
-# GPTCache עם מדיניות פינוי חכמה מבוססת-עלות (Cost-Aware Eviction)
+# GPTCache with a Smart Cost-Aware Eviction Policy
 
 [![Release](https://img.shields.io/pypi/v/gptcache?label=Release&color&logo=Python)](https://pypi.org/project/gptcache/)
 [![pip download](https://img.shields.io/pypi/dm/gptcache.svg?color=bright-green&logo=Pypi)](https://pypi.org/project/gptcache/)
@@ -9,27 +9,27 @@
 
 ---
 
-זוהי הרחבה של **[GPTCache](https://github.com/zilliztech/GPTCache)** שנוצרה כחלק מפרויקט אקדמי. המטרה המרכזית של פרויקט זה היא להציג וליישם מדיניות פינוי (Eviction Policy) משופרת עבור זיכרון מטמון (Cache) בסביבות של מודלי שפה גדולים (LLMs).
+This is an extension of **[GPTCache](https://github.com/zilliztech/GPTCache)**, created as part of an academic project. The primary goal of this project is to introduce and implement an enhanced Eviction Policy for caching environments in Large Language Models (LLMs).
 
-**הבעיה:** מדיניות פינוי מסורתית כמו **Least Recently Used (LRU)** אינה יעילה מספיק עבור LLMs. היא מתעלמת מעלות היצירה של כל פריט ב-cache ועלולה לזרוק פריטים יקרים חישובית לטובת פריטים זולים, רק בגלל שהגישה אליהם התבצעה לאחרונה.
+**The Problem:** Traditional eviction policies like **Least Recently Used (LRU)** are not efficient enough for LLMs. They ignore the creation cost of each cached item and may evict computationally expensive items in favor of cheaper ones, simply because the cheaper item was accessed more recently.
 
-**הפתרון שלנו:** פיתחנו מדיניות פינוי חדשה בשם `CostAwareCacheEviction`. מדיניות זו מחשבת "ערך" דינמי לכל פריט ב-cache על בסיס שלושה פרמטרים מרכזיים:
-1.  **עלות יצירה (Base Cost):** כמה זמן ויקר היה לייצר את התשובה במקור.
-2.  **תדירות גישה (Popularity):** באיזו תדירות משתמשים בפריט זה.
-3.  **גיל (Age):** כמה זמן הפריט נמצא ב-cache, עם דעיכה בערך לאורך זמן.
+**Our Solution:** We developed a new eviction policy named `CostAwareCacheEviction`. This policy calculates a dynamic "value" for each item in the cache based on three key parameters:
+1.  **Creation Cost (Base Cost):** How time-consuming and expensive it was to originally generate the response.
+2.  **Access Frequency (Popularity):** How often this item is used.
+3.  **Age:** How long the item has been in the cache, with its value decaying over time.
 
-בדרך זו, אנו מבטיחים שהפריטים היקרים והשימושיים ביותר יישארו ב-cache, מה שמוביל לשיפור משמעותי בביצועים.
+This way, we ensure that the most valuable and useful items remain in the cache, leading to significant performance improvements.
 
-## 🚀 תכונות מרכזיות של ההרחבה
+## 🚀 Key Features of the Extension
 
-* **מדיניות פינוי חכמה (`CostAwareCacheEviction`):** מחליפה את LRU הסטנדרטי במנגנון שממקסם את הערך הכלכלי של ה-cache.
-* **אינטגרציה מלאה:** המדיניות החדשה נבנתה כירושה ממחלקות הבסיס של GPTCache, מה שמבטיח תאימות מלאה ושימוש קל.
-* **מודולריות וגמישות:** ניתן להתאים את פונקציית חישוב העלות לצרכים ספציפיים.
-* **מערך בדיקות (Benchmark) מקיף:** פיתחנו סוויטת בדיקות שמאפשרת להריץ ולהשוות בקלות בין מדיניות פינוי שונות תחת עומסי עבודה מגוונים.
+* **Smart Eviction Policy (`CostAwareCacheEviction`):** Replaces the standard LRU with a mechanism that maximizes the economic value of the cache.
+* **Full Integration:** The new policy was built by inheriting from GPTCache's base classes, ensuring full compatibility and ease of use.
+* **Modularity and Flexibility:** The cost calculation function can be customized for specific needs.
+* **Comprehensive Benchmark Suite:** We developed a test suite that allows for easy comparison between different eviction policies under various workloads.
 
-## 😊 שימוש מהיר במדיניות החדשה
+## 😊 Quick Start with the New Policy
 
-כדי להשתמש במדיניות הפינוי החדשה, יש לציין `eviction="CostAware"` בעת אתחול ה-`DataManager`.
+To use the new eviction policy, you need to specify `eviction="CostAware"` when initializing the `DataManager`.
 
 ```python
 from gptcache import cache
@@ -37,33 +37,33 @@ from gptcache.embedding import Onnx
 from gptcache.manager import get_data_manager
 from gptcache.adapter import openai
 
-# הגדרות כלליות
+# General settings
 onnx = Onnx()
 
-# אתחול ה-DataManager עם המדיניות החדשה
-# שימו לב לפרמטר eviction="CostAware"
+# Initialize the DataManager with the new policy
+# Note the eviction="CostAware" parameter
 data_manager = get_data_manager(
     scalar_store="sqlite",
     vector_store="faiss",
     eviction="CostAware",
     vector_params={"dimension": onnx.dimension},
-    eviction_params={"maxsize": 50}  # ניתן לשנות את גודל ה-cache
+    eviction_params={"maxsize": 50}  # The cache size can be changed
 )
 
-# אתחול כללי של GPTCache
+# General GPTCache initialization
 cache.init(
     embedding_func=onnx.to_embeddings,
     data_manager=data_manager
 )
 cache.set_openai_key()
 
-# מכאן והלאה, השימוש הוא רגיל לחלוטין
+# From here on, usage is completely standard
 response = openai.ChatCompletion.create(
   model='gpt-3.5-turbo',
   messages=[
     {
         'role': 'user',
-        'content': "מה זה Cost-Aware Eviction?"
+        'content': "What is Cost-Aware Eviction?"
     }
   ],
 )
