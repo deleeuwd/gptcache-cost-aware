@@ -354,8 +354,8 @@ class SSDataManager(DataManager):
         )
         
         # Pass cost information to eviction policy for cost-aware eviction
-        if hasattr(self.eviction_base, 'policy') and self.eviction_base.policy == "CostAware" and costs is not None:
-            self.eviction_base.put([(ids[i], costs[i]) for i in range(len(ids))])
+        if getattr(self.eviction_base, "is_cost_aware", False):
+            self.eviction_base.put([(ids[i], float(costs[i]) if costs[i] is not None else 0) for i in range(len(ids))])
         else:
             self.eviction_base.put(ids)
 
