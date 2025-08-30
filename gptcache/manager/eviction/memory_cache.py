@@ -3,6 +3,7 @@ from typing import Any, Callable, List
 import cachetools
 
 from gptcache.manager.eviction.base import EvictionBase
+from gptcache.manager.eviction.cost_cache import CACache
 
 
 def popitem_wrapper(func, wrapper_func, clean_size):
@@ -40,6 +41,7 @@ class MemoryCacheEviction(EvictionBase):
             on_evict: Callable[[List[Any]], None] = None,
             **kwargs,
     ):
+        cachetools.CACache = CACache
         self._policy = policy.upper()
         if self._policy == "LRU":
             self._cache = cachetools.LRUCache(maxsize=maxsize, **kwargs)
@@ -49,6 +51,8 @@ class MemoryCacheEviction(EvictionBase):
             self._cache = cachetools.FIFOCache(maxsize=maxsize, **kwargs)
         elif self._policy == "RR":
             self._cache = cachetools.RRCache(maxsize=maxsize, **kwargs)
+        elif self._policy == "CA":
+            self._cache = cachetools.CACache(maxsize=maxsize, **kwargs)
         else:
             raise ValueError(f"Unknown policy {policy}")
 
@@ -56,7 +60,13 @@ class MemoryCacheEviction(EvictionBase):
 
     def put(self, objs: List[Any]):
         for obj in objs:
-            self._cache[obj] = True
+            key = obj if not isinstance(obj, tuple) else obj[0]
+            value = True
+            if (self.policy == "CA"):
+                value = 1.0 if not isinstance(obj, tuple) else float(obj[1])
+            else:
+                value = True
+            self._cache[key] = value
 
     def get(self, obj: Any):
         return self._cache.get(obj)

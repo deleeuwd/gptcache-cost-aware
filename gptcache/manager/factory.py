@@ -200,13 +200,6 @@ def get_data_manager(
         vector_base = VectorBase(name=vector_base)
     if isinstance(object_base, str):
         object_base = ObjectBase(name=object_base)
-    if eviction == "CostAware" or eviction_base == "CostAware":
-        eviction_base = EvictionBaseClass.get(
-                name="CostAware",
-                policy=eviction,
-                maxsize=max_size,
-                clean_size=clean_size if clean_size else int(max_size * 0.2)
-            )
     elif isinstance(eviction_base, str) and eviction_base != "memory":
         eviction_base = EvictionBase(name=eviction_base)
     assert cache_base and vector_base
