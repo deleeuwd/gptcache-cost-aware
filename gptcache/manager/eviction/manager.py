@@ -43,5 +43,12 @@ class EvictionBase:
             from gptcache.manager.eviction.distributed_cache import NoOpEviction
             eviction_base = NoOpEviction()
             return eviction_base
+        if name == "CostAware":
+            from gptcache.manager.eviction.cost_aware_cache import CostAwareCacheEviction
+            eviction_base = CostAwareCacheEviction(
+                maxsize, clean_size, on_evict, **kwargs
+            )
+            return eviction_base
+
         else:
             raise NotFoundError("eviction base", name)
