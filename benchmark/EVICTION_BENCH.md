@@ -14,9 +14,9 @@ python eviction_benchmark.py --n 50 --warmup-iters 0 --policies LRU --workloads 
 
 ## Command line options (short)
 
-- `--n` : total number of requests per workload (default: 100)
+- `--n` : total number of requests per workload x 2 (default: 100)
 - `--warmup-iters` : ONNX embedding warm-up iterations (default: 3)
-- `--policies` : list of policies to test (default: LRU LFU FIFO RR CostAware)
+- `--policies` : list of policies to test (default: LRU LFU FIFO RR CA)
 - `--workloads` : list of workloads (default: repetitive novel repetitive-long novel-long)
 - `--provider` : `dummy` or `ollama` (default: dummy)
 - `--model` : model name passed to provider (default: llama3)
@@ -32,26 +32,34 @@ The benchmark builds workloads using `benchmark/mock_data_loader.py`. The script
 Default workload definitions (in `eviction_benchmark.py`):
 
 ```python
-half = max(2, args.n // 2)
+# Each config is: (size, repeated, isLong, isSimilar)
+half = args.n // 2
 workload_configs = {
-	 "repetitive": (half, 2, False),
-	 "novel": (args.n - half, 0, False),
-	 "repetitive-long": (half, 2, True),
-	 "novel-long": (args.n - half, 0, True)
+	"repetitive":       (half, 3, False, True),
+	"novel":            (args.n - half, 0, False, True),
+	"repetitive-long":  (half, 2, True, True),
+	"novel-long":       (args.n - half, 0, True, True),
 }
-# then:
-workload_data = {name: load_mock_data(size=size, repeated=rep, isLong=long, isShuffled=True)
-					  for name, (size, rep, long) in workload_configs.items() if name in args.workloads}
+
+# Then build workload_data and pass a per-workload seed for reproducibility:
+workload_data = {}
+for idx, (name, (size, rep, isLong, isSimilar)) in enumerate(workload_configs.items()):
+	if name in args.workloads:
+		workload_seed = args.seed + idx
+		workload_data[name] = load_mock_data(size=size, repeated=rep, isLong=isLong, isSimilar=isSimilar, isShuffled=True, seed=workload_seed)
 ```
 
-Each tuple maps to arguments passed to `load_mock_data`: `(size, repeated, isLong)` where:
+Each tuple maps to arguments passed to `load_mock_data`: `(size, repeated, isLong, isSimilar)` where:
+
 - `size` is how many items the workload should contain
 - `repeated` is how many extra copies to make for each base prompt (repetition helps create repetitive workloads)
 - `isLong` selects the `mock_data_long.json` file (True) or `mock_data_short.json` (False)
+- `isSimilar` controls whether similar variants (`s`) are included along with originals (`o`)
 
 Important: the script calls `load_mock_data(..., isShuffled=True)` so workloads are shuffled by default.
 
 What the provided default workloads mean:
+
 - `repetitive`: half of the total requests, with `repeated=2` so prompts repeat frequently (short prompts)
 - `novel`: the other half with `repeated=0` so prompts are mostly unique (short prompts)
 - `repetitive-long`: same as `repetitive` but using the long prompt file
@@ -63,7 +71,7 @@ This design gives a mix of repeated vs. novel inputs and short vs. long prompts 
 
 1. Quick change via CLI
 
-	You can override which workloads run using the `--workloads` flag. Example to run just the novel-long workload:
+   You can override which workloads run using the `--workloads` flag. Example to run just the novel-long workload:
 
 ```bash
 python eviction_benchmark.py --workloads novel-long --n 200 --provider dummy
@@ -71,7 +79,7 @@ python eviction_benchmark.py --workloads novel-long --n 200 --provider dummy
 
 2. Edit the built-in `workload_configs` in `eviction_benchmark.py`
 
-	Add a new entry mapping a name to `(size, repeated, isLong)`. Example to add a mixed workload that includes similar prompts:
+   Add a new entry mapping a name to `(size, repeated, isLong)`. Example to add a mixed workload that includes similar prompts:
 
 ```python
 workload_configs["mixed-similar"] = (100, 1, False)
@@ -87,7 +95,7 @@ for name, (size, rep, long) in workload_configs.items():
 
 3. Create custom workload programmatically
 
-	You can bypass `workload_configs` entirely and construct `workload_data` yourself. Any loader that returns a list of prompt strings works.
+   You can bypass `workload_configs` entirely and construct `workload_data` yourself. Any loader that returns a list of prompt strings works.
 
 ```python
 from mock_data_loader import load_mock_data
@@ -97,7 +105,7 @@ custom = load_mock_data(size=150, isLong=False, isSimilar=True, repeated=2, isSh
 
 4. Add/edit source mock files
 
-	The loader reads `benchmark/mock_data_short.json` and `benchmark/mock_data_long.json`. To add new base prompts, edit those files or add a new JSON file and modify `load_mock_data` to accept a `file_path` parameter.
+   The loader reads `benchmark/mock_data_short.json` and `benchmark/mock_data_long.json`. To add new base prompts, edit those files or add a new JSON file and modify `load_mock_data` to accept a `file_path` parameter.
 
 ## `load_mock_data` parameters (summary)
 
@@ -106,13 +114,13 @@ custom = load_mock_data(size=150, isLong=False, isSimilar=True, repeated=2, isSh
 - `isSimilar` (bool): include both original (`o`) and similar (`s`) prompts as separate entries
 - `isShuffled` (bool): shuffle final workload
 - `repeated` (int): how many extra copies to create per base prompt (controls repetition)
+- `random_extra` (int): number of extra random items added to the workload (default: -1, auto-calculated)
+- `seed` (int): optional random seed to make the loader deterministic (recommended for reproducible benchmarks)
 
 ## Where to find/edit mock data
 
 - `benchmark/mock_data_short.json` — short prompts used by default
 - `benchmark/mock_data_long.json` — longer prompts used for the `*-long` workloads
-
-
 
 To add new prompts, append entries to either JSON file. Each entry has the shape:
 
@@ -141,7 +149,6 @@ If you prefer separate datasets, add a new JSON file and either extend `load_moc
 
 ---
 
-
 # Provider file
 
 File: `providers.py`
@@ -158,8 +165,8 @@ The provider is selected via the `--provider` flag. The benchmark uses the provi
 File: `mock_data_loader.py`
 
 Purpose:
-- Produce synthetic benchmark inputs from `mock_data_short.json` and `mock_data_long.json`.
 
+- Produce synthetic benchmark inputs from `mock_data_short.json` and `mock_data_long.json`.
 
 Function signature:
 
@@ -168,6 +175,7 @@ load_mock_data(size=100, isLong=False, isSimilar=False, isShuffled=False, repeat
 ```
 
 Parameters:
+
 - `size` (int): number of entries to return.
 - `isLong` (bool): choose `mock_data_long.json` (True) or `mock_data_short.json` (False).
 - `isSimilar` (bool): if True, for each original prompt `o` the loader will also add the similar prompt `s` as a separate entry.
@@ -175,6 +183,7 @@ Parameters:
 - `repeated` (int): how many extra repetitions of each prompt to insert (0 means one occurrence).
 
 Return shape:
+
 - `List[str]` where each item is a prompt string.
 
 Examples:
@@ -195,7 +204,3 @@ Implementation notes (brief):
 - When `isShuffled` is True the final list is shuffled in-place.
 
 If you need custom workloads (different similarity distributions or deterministic sequences), either modify `mock_data_loader.py` or add a new loader that returns the same `List[dict]` shape.
-
----
-
-If you'd like, I can also add a short example script that runs a single policy and writes a small JSON file with the metrics for easier programmatic checks.
