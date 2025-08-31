@@ -140,7 +140,15 @@ def run_workload(name, prompts, llm):
         f"throughput={throughput:.2f} mem={avg_memory_mb:.0f}MB "
         f"cpu={avg_cpu_percent:.1f}% gpu={gpu_util}"
     )
-    return hit_rate, latency_ms, throughput, avg_memory_mb, avg_cpu_percent, gpu_util
+    return {
+        "hit_rate": hit_rate,
+        "latency_ms": latency_ms,
+        "qps": throughput,
+        "avg_memory_mb": avg_memory_mb,
+        "avg_cpu_percent": avg_cpu_percent,
+        "gpu_util": gpu_util,
+        "latencies": latencies,
+    }
 
 
 def main():
@@ -158,6 +166,8 @@ def main():
     parser.add_argument("--use-faiss", action="store_true", help="Enable Faiss vector index (default: off)")
     parser.add_argument("--no-simulate-latency", dest="simulate_latency", action="store_false", default=True,
                         help="Disable latency simulation (dummy provider only)")
+    parser.add_argument("--p95", action="store_true", help="Compute p95 latency")
+    parser.add_argument("--p99", action="store_true", help="Compute p99 latency")
     args = parser.parse_args()
 
     random.seed(args.seed)
@@ -196,6 +206,13 @@ def main():
         print("ONNX warm-up complete.")
 
     # Run benchmarks
+    # Build percentile list from flags
+    percentiles = []
+    if args.p95:
+        percentiles.append(95.0)
+    if args.p99:
+        percentiles.append(99.0)
+
     results = {policy: {} for policy in args.policies}
     for workload_name, data in workload_data.items():
         print(f"\n=== Running workload: {workload_name} ===")
@@ -214,10 +231,30 @@ def main():
             )
 
             metrics = run_workload(f"{policy}_{workload_name}", data, llm)
-            results[policy][workload_name] = dict(zip(
-                ["hit_rate", "latency_ms", "qps", "avg_memory_mb", "avg_cpu_percent", "gpu_util"],
-                metrics
-            ))
+
+            # Compute requested percentiles (operate on raw latencies)
+            def _percentile(sorted_vals, perc: float):
+                if not sorted_vals:
+                    return 0.0
+                k = (len(sorted_vals) - 1) * (perc / 100.0)
+                f = int(k)
+                c = f + 1
+                if c >= len(sorted_vals):
+                    return float(sorted_vals[-1])
+                d0 = sorted_vals[f] * (c - k)
+                d1 = sorted_vals[c] * (k - f)
+                return float(d0 + d1)
+
+            lat_sorted = sorted(metrics.get("latencies", []))
+            # Attach percentile results into metrics dict
+            for p in percentiles:
+                key = f"p{int(p)}"
+                metrics[key] = _percentile(lat_sorted, p)
+
+            # Remove raw latencies from storage to avoid large objects in results
+            metrics.pop("latencies", None)
+
+            results[policy][workload_name] = metrics
 
             try:
                 if getattr(cache, "data_manager", None):
@@ -230,9 +267,23 @@ def main():
 
 def print_and_save_results(args, results):
     """Print results table and append to file."""
-    header = "{:<10} {:<16} {:<8} {:<12} {:<10} {:<13} {:<8} {:<8}".format(
-        "Policy", "Workload", "Hit Rate", "Latency(ms)", "Throughput", "MemAvg(MB)", "CPU(%)", "GPU"
-    )
+    # Build header dynamically to include optional percentiles
+    pct_fields = []
+    if getattr(args, "p95", False):
+        pct_fields.append("P95(ms)")
+    if getattr(args, "p99", False):
+        pct_fields.append("P99(ms)")
+
+    base_fields = ["Policy", "Workload", "Hit Rate", "Latency(ms)", "Throughput", "MemAvg(MB)", "CPU(%)", "GPU"]
+    header_fields = base_fields[:3] + base_fields[3:]
+    header_fields = base_fields + pct_fields
+    # Create formatting string by counting fields
+    fmt = "{:<10} {:<16} {:<8} {:<12} {:<10} {:<13} {:<8} {:<8}"
+    # Extend format for percentiles
+    if pct_fields:
+        for _ in pct_fields:
+            fmt += " {:<8}"
+    header = fmt.format(*header_fields)
     separator = "-" * len(header)
     eq_sep = "=" * len(header)
 
@@ -244,7 +295,24 @@ def print_and_save_results(args, results):
         for policy in args.policies:
             if workload in results.get(policy, {}):
                 r = results[policy][workload]
-                row = f"{policy:<10} {workload:<16} {r['hit_rate']:<8.3f} {r['latency_ms']:<12.1f} {r['qps']:<10.2f} {r['avg_memory_mb']:<13.0f} {r['avg_cpu_percent']:<8.1f} {r['gpu_util']:<8}"
+                base_values = [
+                    policy,
+                    workload,
+                    f"{r['hit_rate']:<8.3f}",
+                    f"{r['latency_ms']:<12.1f}",
+                    f"{r['qps']:<10.2f}",
+                    f"{r['avg_memory_mb']:<13.0f}",
+                    f"{r['avg_cpu_percent']:<8.1f}",
+                    f"{r['gpu_util']:<8}",
+                ]
+
+                pct_values = []
+                if getattr(args, "p95", False):
+                    pct_values.append(f"{r.get('p95', 0.0):<8.1f}")
+                if getattr(args, "p99", False):
+                    pct_values.append(f"{r.get('p99', 0.0):<8.1f}")
+
+                row = fmt.format(*(base_values + pct_values))
                 print(row)
                 rows.append(row)
         print(separator)

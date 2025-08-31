@@ -25,6 +25,9 @@ python eviction_benchmark.py --n 50 --warmup-iters 0 --policies LRU --workloads 
 - `--seed` : random seed for reproducibility (default: 42)
 - `--no-simulate-latency` : disable latency simulation for dummy provider (flag)
 
+- `--p95` : include p95 (95th percentile) latency in the printed and saved results (flag, off by default)
+- `--p99` : include p99 (99th percentile) latency in the printed and saved results (flag, off by default)
+
 ## Workloads and mock data (how workloads are constructed)
 
 The benchmark builds workloads using `benchmark/mock_data_loader.py`. The script defines a set of default workload configurations and then calls `load_mock_data(...)` to materialize each workload.
@@ -140,6 +143,8 @@ If you prefer separate datasets, add a new JSON file and either extend `load_moc
 
 - The script appends a summary to the file `results` in the `benchmark/` folder.
 - The console prints per-policy/workload metrics: hit rate, latency, throughput, memory and CPU usage, and optional GPU utilization.
+
+- When invoked with `--p95` and/or `--p99` the console and appended results will also include the corresponding percentile latency columns.
 
 ## Recommended quick flags for development
 
