@@ -49,7 +49,7 @@ pip install -r requirements.txt
 python setup.py install
 ```
 
-If you prefer to run the project using Docker, see [DEV-DOCKER.md](doc/DEV-DOCKER.md) for instructions.
+If you prefer to run the project using Docker, see [DEV-DOCKER.md](docs/DEV-DOCKER.md) for instructions.
 
 ### Testing & Benchmark
 
